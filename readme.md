@@ -1,21 +1,23 @@
-Run `make`
+Run `make run`
 
-starts server on port 8080
+Server on port 8080
 
 
 Set up postgres server on linux
-1. Download docker first then run:
-
-`sudo docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:15-alpine`
-
+Run the following in order, might need to copy the command in the make file and append sudo before idk why can't bypass permission error
+`make postgresinit`
+`make postgres`
+`make createdb` 
 Postgres server is in detached mode
 
 Golang-migrate
 Create postgres tables, kinda like git for db tables
+`make createmigration`
+`make migrateup`
 
-Check db tables
-`make postgre`
-TO list
+
+Check docker db tables
+`make postgres`
 `\l`
 Connect to go-chat db: `\c go-chat`
-Then `\d`
+TO get items `\d`
