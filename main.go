@@ -9,9 +9,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"time"
+
+	utils "github.com/rirachii/golivechat/util"
 )
 
 const (
+	
 	// Host name of the HTTP Server
 	Host = "localhost"
 	// Port of the HTTP Server
@@ -23,6 +26,7 @@ const (
 
 func main() {
 	address := fmt.Sprintf("%s:%s", Host, Port)
+	utils.ConsoleLog()
 
 	var serverMuxRouter *http.ServeMux = http.NewServeMux()
 	svr := &http.Server{
