@@ -1,3 +1,3 @@
-go run server.go
+make
 
 starts server on port 8080
