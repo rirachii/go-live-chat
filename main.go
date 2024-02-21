@@ -1,16 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
-	"path/filepath"
-	"time"
-
-	utils "github.com/rirachii/golivechat/util"
+	echo "github.com/labstack/echo/v4"
+	middleware"github.com/labstack/echo/v4/middleware"
 )
 
 const (
@@ -24,87 +22,81 @@ const (
 	clientFolder = "client"
 )
 
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
 func main() {
 	address := fmt.Sprintf("%s:%s", Host, Port)
-	utils.ConsoleLog()
 
-	var serverMuxRouter *http.ServeMux = http.NewServeMux()
-	svr := &http.Server{
-		Addr:        ":8080",
-		Handler:     serverMuxRouter,
-		ReadTimeout: 5 * time.Second,
+	t := &Template{
+		templates: template.Must(template.ParseGlob("templates/pages/*.html")),
 	}
+	log.Println(t.templates.Tree)
 
-	// set up client directories
-	pagesDir := http.Dir(filepath.Join(clientFolder, "pages"))
-	cssDir := http.Dir(filepath.Join(clientFolder, "css"))
-	javaScriptDir := http.Dir(filepath.Join(clientFolder, "js"))
+	e := echo.New()
 
-	// Set up client-accessible routes
-	// serverMuxRouter.Handle("GET /", http.StripPrefix("/", http.FileServer(pagesDir)))
-	_ = pagesDir // ignore unused
+	e.Renderer = t
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   clientFolder,
+		Browse: false,
+	}))
 
-	serverMuxRouter.Handle("GET /css/", http.StripPrefix("/css/", http.FileServer(cssDir)))
-	serverMuxRouter.Handle("GET /js/", http.StripPrefix("/js/", http.FileServer(javaScriptDir)))
+	// e.Static("/js", "js")
+	// e.Static("/css", "css")
+	e.File("/favicon.ico", "client/public/images/favicon.ico")
 
-	// Page routes
-	serverMuxRouter.HandleFunc("GET /", handleRootPageRequest)
-	serverMuxRouter.HandleFunc("GET /landing", handleLanding)
-	serverMuxRouter.HandleFunc("GET /register", handleRegister)
 
-	// API routes
-	serverMuxRouter.HandleFunc("GET /random-msgs", getRandomMsgs)
-	serverMuxRouter.HandleFunc("POST /register", handleRegister)
+	e.GET("/landing", handleLanding)
+	e.GET("/register", handleRegister)
+	e.POST("/register", handleRegister)
+
+	e.GET("/random-msgs", getRandomMsgs)
 
 	// Open server
 	log.Println("Listening on:", fmt.Sprintf("http://%s", address))
-	err := svr.ListenAndServe()
+	err := e.Start(":8080")
 	if err != nil {
-		log.Fatal("Error Starting the HTTP Server : ", err)
+		e.Logger.Fatal("Error Starting the HTTP Server : ", err)
 		return
 	}
 
 }
 
-func handleRootPageRequest(w http.ResponseWriter, r *http.Request) {
+// func handleRootPageRequest(w http.ResponseWriter, r *http.Request) {
 
-	http.Redirect(w, r, "/landing", http.StatusPermanentRedirect)
+// 	http.Redirect(w, r, "/landing", http.StatusPermanentRedirect)
 
-}
+// }
 
-func handleLanding(w http.ResponseWriter, r *http.Request) {
+func handleLanding(c echo.Context) error {
 
-	landingPage := "client/templates/landing.html"
+	landingTemplate := "landing"
 
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
 
-	t, err := template.ParseFiles(landingPage)
 
-	if err != nil {
-		log.Fatal("error parsing landing template")
-	}
-
-	t.Execute(w, data)
+	return c.Render(http.StatusOK, landingTemplate, data)
 
 }
 
-func handleRegister(w http.ResponseWriter, r *http.Request) {
+func handleRegister(c echo.Context) error {
 
-	log.Println(r.URL, r.Method)
+	log.Println(c.Request().Method, c.Request().URL.Path)
 
-	switch requestMethod := r.Method; requestMethod {
+	requestMethod := c.Request().Method
+
+	switch requestMethod {
 	case "GET":
 		// Serve html
-		registerPage := "client/templates/register.html"
+		registerTemplate := "register"
 
-		t, err := template.ParseFiles(registerPage)
-
-		if err != nil {
-			log.Fatal("error parsing register template")
-		}
-
-		t.Execute(w, nil)
+		return c.Render(http.StatusOK, registerTemplate, nil)
 
 	case "POST":
 
@@ -116,8 +108,8 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 			Password string
 		}
 
-		username := r.PostFormValue("username")
-		password := r.PostFormValue("password")
+		username := c.FormValue("username")
+		password := c.FormValue("password")
 
 		postData := RegisterForm{
 			Username: username,
@@ -127,16 +119,20 @@ func handleRegister(w http.ResponseWriter, r *http.Request) {
 		log.Println("Received Username: ", postData.Username)
 		log.Println("Received Password: ", postData.Password)
 
-		// http.Redirect(w, r, "/landing", http.StatusFound)
 
-		w.Header().Set("HX-Location", "/landing")
-		w.WriteHeader(http.StatusFound)
+		c.Response().Header().Set("HX-Location", "landing")
+		c.Response().WriteHeader(http.StatusFound)
 
+		return c.Redirect(http.StatusFound, "/landing")
+
+	default:
+
+		// c.Response().WriteHeader(http.StatusMethodNotAllowed)
+		return c.NoContent(http.StatusMethodNotAllowed)
 	}
-
 }
 
-func getRandomMsgs(w http.ResponseWriter, r *http.Request) {
+func getRandomMsgs(c echo.Context) error {
 
 	msgs := []string{
 		"random 1",
@@ -149,12 +145,7 @@ func getRandomMsgs(w http.ResponseWriter, r *http.Request) {
 	randomIndex := rand.Intn(len(msgs))
 	randomMsg := msgs[randomIndex]
 
-	jsonData, err := json.Marshal(randomMsg)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON", http.StatusInternalServerError)
-		return
-	}
+	c.Response().Header().Set("Content-Type", "application/json")
+	return c.JSON(http.StatusOK, randomMsg)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonData)
 }

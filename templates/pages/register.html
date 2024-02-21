@@ -1,5 +1,7 @@
-<!DOCTYPE html>
+{{ define "register"}}
 
+
+<!DOCTYPE html>
 
 <html>
 
@@ -15,6 +17,10 @@
 <body>
     <h1>Register here!</h1>
 
+    <div>
+        <a href="/landing"> back to home</a>
+    </div>
+
     <form class="register-form" style="display: flex; flex-direction: column;">
 
         <label for="username"><b>Username:</b></label>
@@ -23,7 +29,7 @@
             name="username" 
             minlength="2"
             required
-            >
+        >
 
         <label for="password"><b>Password:</b></label>
         <input type="password" 
@@ -40,10 +46,13 @@
 
     </form>
 
-    <script src="js/_htmx/htmx.min.js"></script>
+    <script src="/js/_htmx/htmx.min.js"></script>
 
 </body>
 
 
 
 </html>
+
+
+{{end}}
