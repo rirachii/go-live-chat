@@ -6,24 +6,23 @@
 <head>
     <meta charset="utf-8">
 	<title>A static page</title>
-	<link rel="stylesheet" type="text/css" href="stylesheets/main.css">
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+
+
+
 </head>
 
 <body>
     <h1>Hello World!</h1>
+    <h2> {{ .Title }}</h2>
     <button hx-get="/random-msgs"> Get random </button>
 
 
+    <br>
+    <a href="register">Register here!</a>
 
 
-
-
-
-
-
-
-    <script src="_htmx/htmx.min.js"></script>
-
+    <script src="js/_htmx/htmx.min.js"></script>
 </body>
 
 </html>
