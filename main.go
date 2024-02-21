@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	echo "github.com/labstack/echo/v4"
-	middleware"github.com/labstack/echo/v4/middleware"
+	middleware "github.com/labstack/echo/v4/middleware"
 )
 
 const (
@@ -50,7 +50,6 @@ func main() {
 	// e.Static("/css", "css")
 	e.File("/favicon.ico", "client/public/images/favicon.ico")
 
-
 	e.GET("/landing", handleLanding)
 	e.GET("/register", handleRegister)
 	e.POST("/register", handleRegister)
@@ -79,7 +78,6 @@ func handleLanding(c echo.Context) error {
 
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
-
 
 	return c.Render(http.StatusOK, landingTemplate, data)
 
@@ -118,7 +116,6 @@ func handleRegister(c echo.Context) error {
 
 		log.Println("Received Username: ", postData.Username)
 		log.Println("Received Password: ", postData.Password)
-
 
 		c.Response().Header().Set("HX-Location", "landing")
 		c.Response().WriteHeader(http.StatusFound)
