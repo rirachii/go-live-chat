@@ -36,7 +36,6 @@ func main() {
 	t := &Template{
 		templates: template.Must(template.ParseGlob("templates/pages/*.html")),
 	}
-	log.Println(t.templates.Tree)
 
 	e := echo.New()
 
@@ -50,6 +49,7 @@ func main() {
 	// e.Static("/css", "css")
 	e.File("/favicon.ico", "client/public/images/favicon.ico")
 
+	e.GET("/", handleRootPageRequest)
 	e.GET("/landing", handleLanding)
 	e.GET("/register", handleRegister)
 	e.POST("/register", handleRegister)
@@ -66,11 +66,12 @@ func main() {
 
 }
 
-// func handleRootPageRequest(w http.ResponseWriter, r *http.Request) {
+func handleRootPageRequest(c echo.Context) error {
 
-// 	http.Redirect(w, r, "/landing", http.StatusPermanentRedirect)
 
-// }
+	return c.Redirect(http.StatusPermanentRedirect,"/landing")
+
+}
 
 func handleLanding(c echo.Context) error {
 
