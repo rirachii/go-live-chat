@@ -1,2 +1,2 @@
 run:
-	@go run server.go
+	@go run main.go
