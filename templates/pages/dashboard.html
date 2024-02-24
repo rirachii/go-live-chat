@@ -1,9 +1,9 @@
-{{ define "landing"}}
+{{ define "dashboard"}}
+
 
 <!DOCTYPE html>
 
 <html>
-
 
 <head>
     <meta charset="utf-8">
@@ -15,21 +15,19 @@
 </head>
 
 <body>
-    <h1>Hello World!</h1>
-    <h2> {{ .Title }}</h2>
-    <button hx-get="/random-msgs"> Get random </button>
+    <h1>Welcome to the app!</h1>
 
-
-    <br>
-    <a href="/login">Login here!</a>
-    <a href="/register">Register here!</a>
-
+    <div>
+        <a href="/landing"> back to home</a>
+    </div>
 
     <script src="/js/_htmx/htmx.min.js"></script>
+
 </body>
 
-</html>
 
+
+</html>
 
 
 {{end}}
