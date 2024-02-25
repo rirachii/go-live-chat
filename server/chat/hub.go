@@ -75,6 +75,11 @@ type HubHandler struct {
 	Hub *ChatHub
 }
 
+type HubChatRoom struct {
+	RoomName string
+	RoomID   string
+}
+
 func (handler *HubHandler) GetHubRooms(c echo.Context) error {
 
 	echo.New().Logger.Printf("gettin rooms")
@@ -83,14 +88,14 @@ func (handler *HubHandler) GetHubRooms(c echo.Context) error {
 
 	chatrooms := handler.Hub.chatRooms
 
-	templateData := map[string][]map[string]string{}
+	templateData := map[string][]HubChatRoom{}
 	for id, h := range chatrooms {
 
 		name := h.ChatRoom.roomName
 
-		roomData := map[string]string{
-			"RoomName": name,
-			"RoomID":   id,
+		roomData := HubChatRoom{
+			RoomName: name,
+			RoomID:   id,
 		}
 
 		templateData["Rooms"] = append(templateData["Rooms"], roomData)
