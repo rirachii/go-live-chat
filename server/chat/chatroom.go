@@ -2,7 +2,7 @@ package chatroom
 
 import (
 	"github.com/labstack/echo/v4"
-	users "github.com/rirachii/golivechat/server/users"
+	users "github.com/rirachii/golivechat/users"
 	ws "nhooyr.io/websocket"
 )
 

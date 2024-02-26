@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
+	"github.com/rirachii/golivechat/db"
+	"github.com/rirachii/golivechat/users"
 )
 
 func HandleLanding(c echo.Context) error {
@@ -26,8 +28,6 @@ func HandleRegisterPageDisplay(c echo.Context) error {
 }
 
 func HandleRegisterUser(c echo.Context) error {
-
-
 	// Handle request to register
 	log.Println("Register POST data received!")
 
@@ -52,4 +52,18 @@ func HandleRegisterUser(c echo.Context) error {
 
 	return c.Redirect(http.StatusFound, "/landing")
 
+}
+
+func HandleCreateUser(c echo.Context) error {
+	dbConn, err := db.NewDatabase()
+	if err != nil {
+		log.Fatalf("Could not initialize postgres db connection: %s", err)
+	}
+
+	userRep := users.NewRepository(dbConn.GetDB())
+	userSvc := users.NewService(userRep)
+	userHandler := users.NewHandler(userSvc)
+	userHandler.CreateUser(c)
+
+	return c.Redirect(http.StatusFound, "/landing")
 }

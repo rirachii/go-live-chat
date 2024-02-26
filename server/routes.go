@@ -6,6 +6,7 @@ import (
 	echo "github.com/labstack/echo/v4"
 	api "github.com/rirachii/golivechat/server/api"
 	handler "github.com/rirachii/golivechat/server/handlers"
+
 )
 
 func InitializeRoutes(e *echo.Echo) {
@@ -14,6 +15,8 @@ func InitializeRoutes(e *echo.Echo) {
 
 	e.GET("/register", handler.HandleRegisterPageDisplay)
 	e.POST("/register", handler.HandleRegisterUser)
+
+	e.POST("/signup", handler.HandleCreateUser)
 
 
 	
