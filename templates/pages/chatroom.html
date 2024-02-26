@@ -1,0 +1,47 @@
+{{ define "chatroom"}}
+
+<!DOCTYPE html>
+
+<html>
+
+
+<head>
+    <meta charset="utf-8">
+	<title> Chatroom </title>
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+
+
+
+</head>
+
+<body>
+    <h2> Welcome to the "{{ .ChatRoomName }}" chat room!</h2>
+
+    <br>
+
+    <div class="chat-container" hx-ext="ws" ws-connect="/chatroom{{.roomId}}" style="border: 1px solid black;">
+
+        <!-- TODO get chat-ghistory -->
+        <div class="chat-history">
+
+        </div>
+
+
+        <!-- TODO hx-ws here -->
+        <form class="textbox" ws-send>
+            <input type="text" name="chat-message" placeholder="Message here!">
+
+        </form>
+
+    </div>
+
+
+    <script src="/js/_htmx/ws.js"></script>
+    <script src="/js/_htmx/htmx.min.js"></script>
+</body>
+
+</html>
+
+
+
+{{end}}
