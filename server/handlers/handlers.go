@@ -54,7 +54,7 @@ func HandleRegisterUser(c echo.Context) error {
 
 }
 
-func HandleCreateUser(c echo.Context) error {
+func getUserHandler() (*users.Handler, error) {
 	dbConn, err := db.NewDatabase()
 	if err != nil {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
@@ -63,7 +63,33 @@ func HandleCreateUser(c echo.Context) error {
 	userRep := users.NewRepository(dbConn.GetDB())
 	userSvc := users.NewService(userRep)
 	userHandler := users.NewHandler(userSvc)
-	userHandler.CreateUser(c)
+	return userHandler, nil
+}
 
+func HandleCreateUser(c echo.Context) error {
+	userHandler, err := getUserHandler()
+	if err != nil {
+		log.Fatalf("Could not get userHandler: %s", err)
+	}
+	userHandler.Login(c)
+
+	return c.Redirect(http.StatusFound, "/landing")
+}
+
+func HandleLogin(c echo.Context) error {
+	userHandler, err := getUserHandler()
+	if err != nil {
+		log.Fatalf("Could not get userHandler: %s", err)
+	}
+	userHandler.Login(c)
+	return c.Redirect(http.StatusFound, "/landing")
+}
+
+func HandleLogout(c echo.Context) error {
+	userHandler, err := getUserHandler()
+	if err != nil {
+		log.Fatalf("Could not get userHandler: %s", err)
+	}
+	userHandler.Logout(c)
 	return c.Redirect(http.StatusFound, "/landing")
 }

@@ -6,7 +6,6 @@ import (
 	echo "github.com/labstack/echo/v4"
 	api "github.com/rirachii/golivechat/server/api"
 	handler "github.com/rirachii/golivechat/server/handlers"
-
 )
 
 func InitializeRoutes(e *echo.Echo) {
@@ -17,14 +16,13 @@ func InitializeRoutes(e *echo.Echo) {
 	e.POST("/register", handler.HandleRegisterUser)
 
 	e.POST("/signup", handler.HandleCreateUser)
+	e.POST("/login", handler.HandleLogin)
+	e.GET("/logout", handler.HandleLogout)
 
-
-	
-	e.POST("/login", func(c echo.Context) error { return echo.ErrNotImplemented })
-
+	// e.POST("/login", func(c echo.Context) error { return echo.ErrNotImplemented })
 
 	// e.GET("/hub", handleHubPage)
-	// e.POST("/hub/createRoom") 
+	// e.POST("/hub/createRoom")
 	// e.GET("/chat/:roomId", func(c echo.Context) error { return c.String(http.StatusNotImplemented, c.Request().URL.Path) })
 	// e.POST("/chat/:roomId/sendChat")
 
