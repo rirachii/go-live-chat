@@ -1,4 +1,4 @@
-package chatroom
+package chat
 
 import (
 	"github.com/labstack/echo/v4"
@@ -6,46 +6,23 @@ import (
 	ws "nhooyr.io/websocket"
 )
 
-type HubHandler struct {
-	hub *ChatHub
+type ChatRoomHandler struct {
+	ChatRoom *LiveChatRoom
 }
 
-
-func (handler *HubHandler) CreateRoom(c echo.Context){
-
-}
-
-func (handler *HubHandler) RegisterUser(c echo.Context){
-
-}
-func (handler *HubHandler) UnregisterUser(c echo.Context){
-
-}
-
-type ChatHub struct {
-	chatRooms       map[string]*LiveChatRoom
-	registerQueue   chan *users.User
-	unregisterQueue chan *users.User
-}
-
-func InitiateHub() *ChatHub {
-	return &ChatHub{
-		chatRooms:       make(map[string]*LiveChatRoom),
-		registerQueue:   make(chan *users.User),
-		unregisterQueue: make(chan *users.User),
+func NewChatRoomHandler(chatRoom *LiveChatRoom) *ChatRoomHandler{
+	return &ChatRoomHandler{
+		ChatRoom: chatRoom,
 	}
 }
 
 type LiveChatRoom struct {
-	chatRoomID        string
-	chatRoomHistory   []Message
+	roomID        string
+	roomName	string	
+	chatHistory   []Message
 	clientConnections map[*ws.Conn]Chatter
-}
-
-type Message struct {
-	From    Chatter
-	Content string
-	roomID  string
+	joinQueue         chan *Client
+	leaveQueue        chan *Client
 }
 
 type Chatter struct {
@@ -56,30 +33,50 @@ type Chatter struct {
 	messageQueue chan *Message
 }
 
+type Message struct {
+	From    Chatter
+	Content string
+}
+
 func NewChatRoom(id string) *LiveChatRoom {
 
 	instance := &LiveChatRoom{
+		roomID:        id,
+		chatHistory:   []Message{},
 		clientConnections: make(map[*ws.Conn]Chatter, 5), //max five for now
-		chatRoomID:        id,
-		chatRoomHistory:   []Message{},
+
 	}
 
 	return instance
 }
 
+func (chatroom *LiveChatRoom) Open() {
+	for {
+		select {
+		case chatter := <- chatroom.joinQueue:
+			// TODO add to this chat
+			_ = chatter
+
+		
+		case chatter := <- chatroom.leaveQueue:
+			// TODO leave from this chat
+			_ = chatter
+		
+		}
+	}
+
+}
+
 func (ChatRoom LiveChatRoom) ID() string {
 
-	return ChatRoom.chatRoomID
+	return ChatRoom.roomID
 }
 
 func (ChatRoom LiveChatRoom) ChatHistory() []Message {
 
-	return ChatRoom.chatRoomHistory
+	return ChatRoom.chatHistory
 }
 
-func (*LiveChatRoom) Open() {
-
-}
 
 func HandleCreateChatRoom(c echo.Context) {
 

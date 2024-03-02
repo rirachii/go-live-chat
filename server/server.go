@@ -9,6 +9,7 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	middleware "github.com/labstack/echo/v4/middleware"
+	"github.com/rirachii/golivechat/server/chat"
 	// chat "github.com/rirachii/golivechat/server/chat"
 )
 
@@ -48,9 +49,12 @@ func main() {
 
 
 	e.File("/favicon.ico", clientFolder+"/public/images/favicon.ico")
-	e.GET("/", redirectToHome)
+	e.GET("/", redirectToLanding)
 
-	InitializeRoutes(e)
+	hub, hubHandler := chat.InitiateHub()
+	go hub.Run()
+	
+	InitializeRoutes(e, hubHandler)
 
 	// Open server
 	log.Println("Listening on:", fmt.Sprintf("http://%s", address))
@@ -62,8 +66,12 @@ func main() {
 
 }
 
-func redirectToHome(c echo.Context) error {
+// func handle (w,r)
+
+func redirectToLanding(c echo.Context) error {
 
 	return c.Redirect(http.StatusPermanentRedirect, "/landing")
 
 }
+
+

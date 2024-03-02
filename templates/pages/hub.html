@@ -1,0 +1,81 @@
+{{ define "hub"}}
+
+<!DOCTYPE html>
+
+<html>
+
+
+<head>
+    <meta charset="utf-8">
+	<title>A static page</title>
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+
+
+</head>
+
+<style>
+    .chatrooms-container{
+        display: grid;
+        grid-gap: 0.5rem;
+    }
+
+    .chatroom-item{
+        padding: 0.5rem;
+        border: 1px solid black;
+    }
+</style>
+
+<body>
+    <h1>Welcome to the chat hub!</h1>
+
+    <a href="/landing">Back to homepage</a>
+
+    <form
+        hx-post="/hub/create-room"
+        hx-swap="none"
+    >
+        <label for="room-name">Enter the room name here: </label>
+        <input type="text" name="room-name", placeholder="Ur mom's room" required>
+
+        <button type="submit">
+            Create room!
+        </button>
+    </form>
+
+
+    <h2> Join a room!</h2>
+
+    <div class="chatrooms-container">
+        <button type="button"
+            hx-get="/hub/get-rooms"
+            hx-trigger="click, every 5s"
+            hx-target=".chatrooms-placeholder"
+            hx-swap="innerHTML"
+        >
+            Refresh Rooms
+        </button>
+
+        <div class="chatrooms-placeholder"></div>
+
+
+    </div>
+
+
+
+    <script src="/js/_htmx/htmx.min.js"></script>
+</body>
+
+</html>
+
+
+
+{{end}}
+
+
+{{ define "hub-chatroom"}}
+
+    {{ range .Rooms }}
+        <a href="/chat/{{ .RoomID }}" class="chatroom-item"> {{ .RoomName }} Chat Room </a>
+    {{ end }}
+
+{{end}}
