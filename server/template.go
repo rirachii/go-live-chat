@@ -1,0 +1,27 @@
+package main
+
+import (
+	"io"
+	"html/template"
+	echo "github.com/labstack/echo/v4"
+)
+
+
+
+type Template struct {
+	templates *template.Template
+}
+
+func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	return t.templates.ExecuteTemplate(w, name, data)
+}
+
+
+func NewTemplateRenderer(pattern string) *Template{
+	t := &Template{
+		templates: template.Must(template.ParseGlob(pattern)),
+	}
+
+	return t
+
+}

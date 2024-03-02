@@ -12,24 +12,13 @@ import (
 	"nhooyr.io/websocket/wsjson"
 )
 
-// type ChatRoomHandler struct {
-// 	ChatRoom *LiveChatRoom
-// }
-
-// func NewChatRoomHandler(chatRoom *LiveChatRoom) *ChatRoomHandler {
-// 	return &ChatRoomHandler{
-// 		ChatRoom: chatRoom,
-// 	}
-// }
-
 type ChatroomClient struct {
 	WebSocket *websocket.Conn
 	UserID    UserID
 	RoomID    RoomID
 }
 
-type ChatRoom struct {
-	HTMLTemplate      *template.Template
+type Chatroom struct {
 	RoomID            RoomID
 	RoomName          string
 	RoomOwner         UserID
@@ -68,10 +57,9 @@ type MessageHTML struct {
 	TextMessage string
 }
 
-func NewChatRoom(uid UserID, rid RoomID, roomName string, t *template.Template) *ChatRoom {
+func NewChatroom(uid UserID, rid RoomID, roomName string) *Chatroom {
 
-	newRoom := &ChatRoom{
-		HTMLTemplate:      t,
+	newRoom := &Chatroom{
 		RoomID:            rid,
 		RoomName:          roomName,
 		RoomOwner:         uid,
@@ -86,7 +74,7 @@ func NewChatRoom(uid UserID, rid RoomID, roomName string, t *template.Template) 
 	return newRoom
 }
 
-func (room *ChatRoom) Open() {
+func (room *Chatroom) Open() {
 	for {
 		select {
 		case client := <-room.JoinQueue:
@@ -149,7 +137,7 @@ func (room *ChatRoom) Open() {
 			echo.New().Logger.Printf("new message to broadcast -> %i", newMessage)
 
 			// TODO add to history
-			room.LogMessage(newMessage)
+			room.logMessage(newMessage)
 
 			for chatterWS, chatter := range room.ClientConnections {
 				// TODO go send to all
@@ -163,13 +151,14 @@ func (room *ChatRoom) Open() {
 					websocket.MessageText,
 				)
 				// TODO if websocket closed handle it, remove from connections, etc.
-				// TODO bug, when user rejoins and tries to send message, system breaks
 				if writeErr != nil {
 					log.Println(`error creating ws writer!`, writeErr.Error())
 
 				} else {
 					log.Println("writer opened")
 
+
+					// TODO better way to do this
 					chatroomTemplates := template.Must(template.ParseFiles("templates/pages/chatroom.html"))
 					singleMessageTemplate := chatroomTemplates.Lookup("single-message")
 
@@ -198,7 +187,7 @@ func (room *ChatRoom) Open() {
 
 }
 
-func (room *ChatRoom) RenderChatroomPage(c echo.Context) error {
+func (room *Chatroom) RenderChatroomPage(c echo.Context) error {
 
 	// TODO check for unauthorized access
 
@@ -211,21 +200,8 @@ func (room *ChatRoom) RenderChatroomPage(c echo.Context) error {
 	return c.Render(http.StatusOK, chatroomTemplate, templateData)
 }
 
-func (room ChatRoom) GetRID() string {
 
-	return string(room.RoomID)
-}
-
-func (room ChatRoom) GetChatHistory() []*Message {
-
-	return room.ChatHistory
-}
-func (room *ChatRoom) LogMessage(msg *Message) {
-
-	room.ChatHistory = append(room.ChatHistory, msg)
-}
-
-func (room *ChatRoom) HandleNewConnection(c echo.Context) error {
+func (room *Chatroom) HandleNewConnection(c echo.Context) error {
 
 	echo.New().Logger.Printf("New websocket connection received! isWebsocket='%s'", c.IsWebSocket())
 
@@ -262,7 +238,7 @@ func (room *ChatRoom) HandleNewConnection(c echo.Context) error {
 // 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 // defer cancel()
 
-func (room *ChatRoom) HandleNewMessage(c echo.Context) error {
+func (room *Chatroom) HandleNewMessage(c echo.Context) error {
 
 	// TODO
 	// get msg, log it, send to broadcast channel
@@ -301,12 +277,12 @@ func HandleCreateChatRoom(c echo.Context) error {
 	return nil
 }
 
-func (room *ChatRoom) HandleChatroomHistory(c echo.Context) error {
+func (room *Chatroom) HandleChatroomLogs(c echo.Context) error {
 
 	echo.New().Logger.Printf("get Chat history request received")
-	log.Printf("current history: %v", room.GetChatHistory())
+	log.Printf("current chat log: %v", room.getChatLogs())
 
-	chatHistory := room.GetChatHistory()
+	chatHistory := room.getChatLogs()
 
 	msgsData := map[string][]MessageHTML{}
 	const messagesLoopID = "ChatMessages"
@@ -329,4 +305,25 @@ func (room *ChatRoom) HandleChatroomHistory(c echo.Context) error {
 
 	const msgsTemplateID = "many-messages"
 	return c.Render(http.StatusOK, msgsTemplateID, msgsData)
+}
+
+
+
+
+func (room Chatroom) getRID() string {
+
+	return string(room.RoomID)
+}
+
+func (room Chatroom) getChatLogs() []*Message {
+
+	return room.ChatHistory
+}
+func (room *Chatroom) logMessage(msg *Message) {
+
+	room.ChatHistory = append(room.ChatHistory, msg)
+}
+
+func (room Chatroom) getName() string {
+	return room.RoomName
 }

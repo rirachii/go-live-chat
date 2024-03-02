@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-	"html/template"
-	"io"
 	"log"
-	"net/http"
 
 	echo "github.com/labstack/echo/v4"
 	middleware "github.com/labstack/echo/v4/middleware"
@@ -14,47 +11,19 @@ import (
 )
 
 const (
-
 	// Host name of the HTTP Server
 	Host = "localhost"
 	// Port of the HTTP Server
 	Port = "8080"
-
 	// File folder for Frontend
 	clientFolder = "client"
 )
 
-type Template struct {
-	templates *template.Template
-}
-
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
-}
-
 func main() {
 	address := fmt.Sprintf("%s:%s", Host, Port)
 
-	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/pages/*.html")),
-	}
-
 	e := echo.New()
-
-	e.Renderer = t
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   clientFolder,
-		Browse: false,
-	}))
-
-
-	e.File("/favicon.ico", clientFolder+"/public/images/favicon.ico")
-	e.GET("/", redirectToLanding)
-
-	hub, hubHandler := chat.InitiateHub(t.templates)
-	go hub.Run()
-	
-	InitializeRoutes(e, hubHandler)
+	SetupEcho(e)
 
 	// Open server
 	log.Println("Listening on:", fmt.Sprintf("http://%s", address))
@@ -66,12 +35,29 @@ func main() {
 
 }
 
-// func handle (w,r)
+func SetupEcho(e *echo.Echo){
 
-func redirectToLanding(c echo.Context) error {
+	t := NewTemplateRenderer("templates/pages/*.html")
 
-	return c.Redirect(http.StatusPermanentRedirect, "/landing")
+	e.Renderer = t
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   clientFolder,
+		Browse: false,
+	}))
+
+
+
+	e.File("/favicon.ico", clientFolder+"/public/images/favicon.ico")
+	e.GET("/", redirectToLanding)
+	
+
+	hub, hubHandler := chat.InitiateHub()
+	
+	InitializeRoutes(e, hubHandler)
+	go hub.Run()
+
 
 }
+
 
 
