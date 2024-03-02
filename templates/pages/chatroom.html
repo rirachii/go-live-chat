@@ -14,34 +14,175 @@
 
 </head>
 
-<body>
-    <h2> Welcome to the "{{ .ChatRoomName }}" chat room!</h2>
+<body></body>
+    <h2> 
+        Welcome to the "{{ .RoomName }}" chat room!
+    </h2>
 
     <br>
+    <a href="/hub">back to hub</a>
+    <br>
 
-    <div class="chat-container" hx-ext="ws" ws-connect="/chatroom{{.roomId}}" style="border: 1px solid black;">
+    <button
+        type="button"
+    > 
+        Connect to Chat
+    </button>
 
-        <!-- TODO get chat-ghistory -->
-        <div class="chat-history">
 
+    <div 
+        class="chat-room" 
+        hx-trigger="load"
+        hx-get="/ws/{{ .RoomID }}"
+        hx-vals='js:{"userID": getDisplayName()}'
+        hx-target="this"
+        hx-swap="outerHTML"
+    >
+    </div>
+
+    
+    <script src="/js/htmx/htmx.min.js"></script>
+    <script src="/js/htmx/ws.js"></script>
+    <script src="/js/htmx/json-enc.js"></script>
+    <script src="/js/localStorage.js"></script>
+    
+    <script>
+        document.addEventListener("htmx:wsConnecting", function () {
+            console.log('attemping to connect websocket')
+        });
+        document.addEventListener("htmx:wsOpen", function () {
+            console.log('websocket opened!')
+        });
+        document.addEventListener("htmx:wsClose", function () {
+            console.log('websocket closed!')
+        });
+        document.addEventListener("htmx:wsError", function () {
+            console.log('websocket error!')
+        });
+        document.addEventListener("htmx:wsAfterSend", function (event) {
+            console.log(event)
+            console.log('websocket sent!')
+        });
+        document.addEventListener("submit", function (event) {
+            event.preventDefault()
+        });
+
+
+    </script>
+
+
+</body>
+
+</html>
+
+
+{{end}}
+
+
+
+{{ define "chatroom-connection"}}
+
+    <div
+        class="chat-room"
+        hx-ext="ws"
+        ws-connect="{{ .ConnectionRoute }}"
+    >
+
+        <div
+            id="chat-history"
+            hx-trigger="load"
+            hx-get="/hub/chatroom/{{ .RoomID }}/chat-history"
+            hx-target="this"
+            hx-swap="outerHTML"
+        >
+            
+        </div>
+    
+        <div 
+            id="chat-messages"
+            style="border: 1px solid black; display: flex; flex-direction: column;"
+        >
+            
         </div>
 
+        
 
-        <!-- TODO hx-ws here -->
-        <form class="textbox" ws-send>
+
+        <form 
+            id="text-box" 
+            ws-send
+            hx-include="this"
+            hx-vals='js:{"user-id": getDisplayName()}'
+            hx-ext="json-enc"
+            hx-swap="afterbegin"
+        >
+            <input type="text" hidden name="room-id" value="{{ .RoomID }}">
             <input type="text" name="chat-message" placeholder="Message here!">
+            <button type="submit"> Send! </button>
 
         </form>
 
     </div>
 
 
-    <script src="/js/_htmx/ws.js"></script>
-    <script src="/js/_htmx/htmx.min.js"></script>
-</body>
-
-</html>
 
 
+{{ end }}
 
-{{end}}
+
+{{ define "many-messages"}}
+
+    {{ range .ChatMessages }}
+
+        <div
+            id="{{ .DivID }}"
+            hx-swap-oob="{{ if .PrependMsg }}afterbegin{{ else }}beforeend{{ end }}"
+        >
+            <div 
+                id="chat-message"
+                style="display: inline;"
+            >
+                {{if .DisplayName}} 
+                    <span id="user-name" style="font-weight: bold;"> 
+                        {{ .DisplayName }}:
+                    </span> 
+                {{ end }}
+
+                <p id="message">
+                    {{ .TextMessage }}
+                </p>
+            </div>
+
+
+        </div>
+
+    {{ end }}
+
+{{ end }}
+
+
+{{ define "single-message" }}
+
+    <div
+        id="{{ .DivID }}"
+        hx-swap-oob="{{ if .PrependMsg }}afterbegin{{ else }}beforeend{{ end }}"
+    >
+        <div 
+            id="chat-message"
+            style="display: flex; flex-direction: row;"
+        >
+            {{if .DisplayName}} 
+                <span id="user-name" style="font-weight: bold;"> 
+                    {{ .DisplayName }}:
+                </span> 
+            {{ end }}
+
+            <p id="message">
+                {{ .TextMessage }}
+            </p>
+        </div>
+
+
+    </div>
+
+{{ end }} 

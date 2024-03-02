@@ -1,32 +1,57 @@
 package chat
 
 import (
-	"log"
+	"fmt"
+	"html/template"
 	"net/http"
 
 	"strconv"
 
-	"github.com/labstack/echo/v4"
-	ws "nhooyr.io/websocket"
+	echo "github.com/labstack/echo/v4"
+	// websocket "nhooyr.io/websocket"
 )
 
-type Client struct {
-	UserID string
-	RoomID string
+type UserID string
+type RoomID string
+
+type User struct {
+	// WebSocket *websocket.Conn
+	UserID UserID
+	RoomID RoomID
 }
 
-type ChatHub struct {
-	chatRooms      map[string]*ChatRoomHandler
-	joinRoomQueue  chan *Client
-	leaveRoomQueue chan *Client
+type HubHandler struct {
+	Hub      *ChatroomsHub
+	HTMLTemplate *template.Template
 }
 
-func InitiateHub() (*ChatHub, *HubHandler) {
+type ChatroomsHub struct {
+	HTMLTemplate    *template.Template
+	ChatRooms       map[RoomID]*ChatRoom
+	UserChatrooms   map[UserID]SetOfChatrooms // userid -> their chatrooms (room ids)
+	RegisterQueue   chan *User
+	UnregisterQueue chan *User
+}
 
-	hub := &ChatHub{
-		chatRooms:      make(map[string]*ChatRoomHandler),
-		joinRoomQueue:  make(chan *Client),
-		leaveRoomQueue: make(chan *Client),
+type SetOfChatrooms struct {
+	Chatrooms map[RoomID]bool
+}
+
+func (rooms *SetOfChatrooms) RegisterRoom(roomID RoomID) {
+	// TODO be aware does not check if the room is already registered to them
+	rooms.Chatrooms[roomID] = true
+}
+func (rooms *SetOfChatrooms) UnregisterRoom(roomID RoomID) {
+	delete(rooms.Chatrooms, roomID)
+}
+
+func InitiateHub(t *template.Template) (*ChatroomsHub, *HubHandler) {
+
+	hub := &ChatroomsHub{
+		ChatRooms:       make(map[RoomID]*ChatRoom),
+		UserChatrooms:   make(map[UserID]SetOfChatrooms),
+		RegisterQueue:   make(chan *User),
+		UnregisterQueue: make(chan *User),
 	}
 
 	handler := &HubHandler{
@@ -36,84 +61,124 @@ func InitiateHub() (*ChatHub, *HubHandler) {
 	return hub, handler
 }
 
-func (h *ChatHub) Run() {
+func (hub *ChatroomsHub) Run() {
 
 	for {
 		select {
-		case client := <-h.joinRoomQueue:
+		case client := <-hub.RegisterQueue:
 			// register them to the approrpiate chat
-			// <client
-			log.Println(client)
 
-		case client := <-h.leaveRoomQueue:
-			log.Println(client)
+			clientID, roomID := client.UserID, client.RoomID
+
+			userChatrooms, ok := hub.UserChatrooms[clientID]
+			if !ok {
+				hub.UserChatrooms[clientID] = SetOfChatrooms{
+					Chatrooms: make(map[RoomID]bool),
+				}
+				userChatrooms = hub.UserChatrooms[clientID]
+				// log.Printf("user [%s] not found", clientID)
+			}
+
+			userChatrooms.RegisterRoom(roomID)
+
+			// chatRoom := hub.ChatRooms[roomID]
+			// // chatRoom.JoinQueue <- client
+
+			echo.New().Logger.Printf("Registering %s to room %s", clientID, roomID)
+			echo.New().Logger.Printf("User [%s] rooms: %i", clientID, userChatrooms)
+
+		case client := <-hub.UnregisterQueue:
+
+			clientID, roomID := client.UserID, client.RoomID
+
+			// userChatrooms, ok := hub.UserChatrooms[clientID]
+			// if !ok {
+			// 	log.Printf("user [%s] not found", clientID)
+			// }
+
+			// userChatrooms.UnregisterRoom(roomID)
+
+			// chatRoom := hub.ChatRooms[roomID]
+
+			// chatRoom.LeaveQueue <- client
+
+			echo.New().Logger.Printf("Unregistering %s from room %s", clientID, roomID)
 
 		}
 	}
 
 }
 
-func (h *ChatHub) AddRoom(chatRoom *LiveChatRoom) error {
+func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *ChatRoom) error {
 
-	echo.New().Logger.Printf("adding room")
-
-	roomId := chatRoom.ID()
-
-	chatRoomHandler := NewChatRoomHandler(chatRoom)
-
-	h.chatRooms[roomId] = chatRoomHandler
-
-	echo.New().Logger.Print(len(h.chatRooms))
+	roomID := newChatRoom.RoomID
+	hub.ChatRooms[roomID] = newChatRoom
+	go newChatRoom.Open()
 
 	// TODO check errors
-
 	return nil
 
 }
+func (hub ChatroomsHub) GetChatroom(roomID RoomID) *ChatRoom {
 
-type HubHandler struct {
-	Hub *ChatHub
+	getChatroom, ok := hub.ChatRooms[roomID]
+
+	if !ok {
+		return nil
+	}
+
+	return getChatroom
+
 }
 
 type HubChatRoom struct {
+	RoomID   RoomID
 	RoomName string
-	RoomID   string
 }
 
-func (handler *HubHandler) GetHubRooms(c echo.Context) error {
+func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 
-	echo.New().Logger.Printf("gettin rooms")
-
-	chatroomTemplateName := "hub-chatroom"
-
-	chatrooms := handler.Hub.chatRooms
+	// name of the loop in the template
+	chatrooms := handler.Hub.ChatRooms
 
 	templateData := map[string][]HubChatRoom{}
-	for id, h := range chatrooms {
+	const roomsContainerID = "Rooms"
 
-		name := h.ChatRoom.roomName
+	for roomID, room := range chatrooms {
+
+		roomName := room.RoomName
 
 		roomData := HubChatRoom{
-			RoomName: name,
-			RoomID:   id,
+			RoomName: roomName,
+			RoomID:   roomID,
 		}
 
-		templateData["Rooms"] = append(templateData["Rooms"], roomData)
+		templateData[roomsContainerID] = append(templateData[roomsContainerID], roomData)
 
 		// htmlTemplate := template.
 	}
 
+	const chatroomTemplateName = "hub-chatrooms"
 	return c.Render(http.StatusOK, chatroomTemplateName, &templateData)
 
 }
 
-type createRoomRequest struct {
-	RoomName string `form:"room-name"`
+func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
+
+	roomID := c.Param("roomID")
+	getChatroom := handler.Hub.GetChatroom(RoomID(roomID))
+	return getChatroom.HandleChatroomHistory(c)
 }
 
-func (handler *HubHandler) CreateRoom(c echo.Context) error {
+type CreateRoomRequest struct {
+	// TODO: user id instead of user display name
+	UserID   string `json:"display-name"`
+	RoomName string `json:"room-name"`
+}
 
-	var newRoomRequest createRoomRequest
+func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
+
+	var newRoomRequest CreateRoomRequest
 
 	err := c.Bind(&newRoomRequest)
 
@@ -121,74 +186,130 @@ func (handler *HubHandler) CreateRoom(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
+	echo.New().Logger.Printf("Create room request received with data: %i", newRoomRequest)
+
 	// TODO check if room already exists
 
 	// id := newRoomRequest.RoomID
-	id := strconv.Itoa(len(handler.Hub.chatRooms))
+	var rid RoomID = RoomID(strconv.Itoa(len(handler.Hub.ChatRooms)))
+	uid := newRoomRequest.UserID
 	name := newRoomRequest.RoomName
 
-	newRoom := &LiveChatRoom{
-		roomID:            id,
-		roomName:          name,
-		chatHistory:       []Message{},
-		clientConnections: make(map[*ws.Conn]Chatter),
-		joinQueue:         make(chan *Client),
-		leaveQueue:        make(chan *Client),
-	}
+	newRoom := NewChatRoom(UserID(uid), rid, name, handler.HTMLTemplate)
 
-	handler.Hub.AddRoom(newRoom)
+	handler.Hub.AddandOpenRoom(newRoom)
 
 	// return echo.ErrNotImplemented
-	return c.NoContent(http.StatusOK)
+
+	templateData := map[string][]map[string]string{
+		"Rooms": {
+			{"RoomName": name, "RoomID": string(rid)},
+		},
+	}
+
+	const hubChatroomsTemplateID = "hub-chatrooms"
+	return c.Render(http.StatusOK, hubChatroomsTemplateID, templateData)
 }
 
-type userRequest struct {
-	UserID string `json:"userId"`
-	RoomID string `json:"roomId"`
+type RegisterRequest struct {
+	// TODO user ID instaed of user display name
+	UserID string `json:"display-name"`
+	RoomID string `json:"room-id"`
 }
 
-func (handler *HubHandler) ForwardUser(c echo.Context) error {
+func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 
-	// handler
-	var registerRequest userRequest
+	//serve it
+	// in another handler, accept websocket
+
+	var registerRequest RegisterRequest
 	err := c.Bind(&registerRequest)
 	if err != nil {
 		// TODO handle error
 		_ = err
 	}
 
-	uid, rid := registerRequest.UserID, registerRequest.RoomID
+	echo.New().Logger.Printf("user register request received with data: %i", registerRequest)
 
-	client := &Client{
-		UserID: uid,
-		RoomID: rid,
+	uid := registerRequest.UserID
+	rid := c.Param("roomID")
+
+	// roomHandler := handler.Hub.chatRooms[rid]
+
+	user := &User{
+		// WebSocket: nil,
+		UserID: UserID(uid),
+		RoomID: RoomID(rid),
 	}
 
-	handler.Hub.joinRoomQueue <- client
+	handler.Hub.RegisterQueue <- user
 
-	return nil
+	chatroomRoute := fmt.Sprintf("/hub/chatroom/%s", rid)
+
+	c.Response().Header().Set("HX-Location", chatroomRoute)
+	return c.NoContent(http.StatusFound)
 }
 
-func (handler *HubHandler) UnregisterUser(c echo.Context) error {
+func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
+
+	// TODO handle unauthorized access to page, they should be register Queue
+
+	roomID := c.Param("roomID")
+	getChatroom := handler.Hub.ChatRooms[RoomID(roomID)]
+
+	return getChatroom.RenderChatroomPage(c)
+
+}
+
+type UnregisterRequest struct {
+	// TODO user ID instaed of user display name
+	UserID string `json:"display-name"`
+	RoomID string `json:"room-id"`
+}
+
+func (handler *HubHandler) HandleUserLeave(c echo.Context) error {
 
 	// handler
-	var registerRequest userRequest
-	err := c.Bind(&registerRequest)
+	var unregisterRequest UnregisterRequest
+	err := c.Bind(&unregisterRequest)
 	if err != nil {
 		// TODO handle error
 		_ = err
 
 	}
 
-	uid, rid := registerRequest.UserID, registerRequest.RoomID
+	uid, rid := unregisterRequest.UserID, unregisterRequest.RoomID
 
-	client := &Client{
-		UserID: uid,
-		RoomID: rid,
+	user := &User{
+		UserID: UserID(uid),
+		RoomID: RoomID(rid),
 	}
 
-	handler.Hub.joinRoomQueue <- client
+	handler.Hub.UnregisterQueue <- user
 
 	return nil
 
+}
+
+func (handler *HubHandler) HandleChatroomWSConnection(c echo.Context) error {
+	// Websocket connection, should be
+	// c.Echo().Logger.Print(c.Request(), c.Request().Body)
+
+	// userID := c.Param("UserID")
+	roomID := c.Param("roomID")
+
+	// check user ID
+
+	getChatroom := handler.Hub.ChatRooms[RoomID(roomID)]
+
+	return getChatroom.HandleNewConnection(c)
+
+}
+
+func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
+
+	roomID := c.Param("roomID")
+	getChatroom := handler.Hub.GetChatroom(RoomID(roomID))
+
+	return getChatroom.HandleNewMessage(c)
 }

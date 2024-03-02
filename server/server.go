@@ -51,7 +51,7 @@ func main() {
 	e.File("/favicon.ico", clientFolder+"/public/images/favicon.ico")
 	e.GET("/", redirectToLanding)
 
-	hub, hubHandler := chat.InitiateHub()
+	hub, hubHandler := chat.InitiateHub(t.templates)
 	go hub.Run()
 	
 	InitializeRoutes(e, hubHandler)

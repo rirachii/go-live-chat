@@ -1,0 +1,12 @@
+
+{{ define "websocket-div"}}
+
+    <div
+    hx-ext="ws"
+    ws-connect="{{ .ConnectionRoute }}"
+    hx-target="chat-history"
+    hx-swap="afterend"
+    >
+    </div>
+
+{{ end }}

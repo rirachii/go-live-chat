@@ -1,21 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
 	api "github.com/rirachii/golivechat/server/api"
 	chat "github.com/rirachii/golivechat/server/chat"
-	handler "github.com/rirachii/golivechat/server/handlers"
+	handlers "github.com/rirachii/golivechat/server/handlers"
 )
-
 
 func InitializeRoutes(e *echo.Echo, hubHandler *chat.HubHandler) {
 
-	e.GET("/landing", handler.HandleLanding)
+	e.GET("/landing", handlers.HandleLanding)
 
-	e.GET("/register", handler.HandleRegisterPageDisplay)
-	e.POST("/register", handler.HandleRegisterUser)
+	e.GET("/register", handlers.HandleRegisterPageDisplay)
+	e.POST("/register", handlers.HandleRegisterUser)
 
 
 	
@@ -23,18 +23,30 @@ func InitializeRoutes(e *echo.Echo, hubHandler *chat.HubHandler) {
 		return c.Redirect(http.StatusFound,"/hub") 
 	})
 
-	e.POST("/signup", handler.HandleCreateUser)
-	e.POST("/login", handler.HandleLogin)
-	e.GET("/logout", handler.HandleLogout)
+	e.POST("/signup", handlers.HandleCreateUser)
+	e.POST("/login", handlers.HandleLogin)
+	e.GET("/logout", handlers.HandleLogout)
 
 	// e.POST("/login", func(c echo.Context) error { return echo.ErrNotImplemented })
+	InitializeHubRoutes(e, hubHandler)
+	InitializeAPIRoutes(e)
 
-	e.GET("/hub", handler.HandleHubPage)
-	e.GET("/hub/get-rooms", hubHandler.GetHubRooms)
-	e.POST("/hub/create-room", hubHandler.CreateRoom)
-	// e.GET("/chat/:roomId", func(c echo.Context) error { return c.String(http.StatusNotImplemented, c.Request().URL.Path) })
-	// e.POST("/chat/:roomId/send-chat")
+}
 
+func InitializeHubRoutes(e *echo.Echo, hubHandler *chat.HubHandler) {
+	e.GET("/hub*", handlers.HandleHubPage)
+	e.GET("/hub/get-rooms", hubHandler.HandleGetChatrooms)
+	e.POST("/hub/create-room", hubHandler.HandleCreateRoom)
+	e.POST("/hub/join/:roomID", hubHandler.HandleUserJoinRequest)
+	e.GET("/hub/chatroom/:roomID", hubHandler.HandleChatroomPage)
+	e.GET("/hub/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
+	e.GET("/ws/:roomID", ServeChatroomConnection)
+	e.GET("/hub/chatroom/:roomID/ws", hubHandler.HandleChatroomWSConnection)
+
+}
+
+
+func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)
 
 }
@@ -45,5 +57,22 @@ func getRandomMsg(c echo.Context) error {
 
 	c.Response().Header().Set("Content-Type", "application/json")
 	return c.JSON(http.StatusOK, randomMsg)
+
+}
+
+
+func ServeChatroomConnection(c echo.Context) error {
+
+	roomID := c.Param("roomID")
+	echo.New().Logger.Printf(c.QueryString())
+
+
+	roomData := map[string]string{
+		"ConnectionRoute": fmt.Sprintf("/hub/chatroom/%s/ws", roomID),
+		"RoomID": roomID,
+	}
+
+	const chatroomConnectionTemplateID = "chatroom-connection"
+	return c.Render(http.StatusOK, chatroomConnectionTemplateID, roomData)
 
 }

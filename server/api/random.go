@@ -17,3 +17,4 @@ func RandomMsg() string {
 
 	return randomMsg
 }
+
