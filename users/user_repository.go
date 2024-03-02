@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 // flexibility can pass in transaction instead of db object
@@ -33,4 +34,15 @@ func (r *repository) CreateUser(ctx context.Context, user *User) (*User, error) 
 	return user, nil
 }
 
+func (r *repository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	u := User{}
 
+	query := "SELECT id, email, username, password FROM users WHERE email = $1"
+	err := r.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Email, &u.Username, &u.Password)
+	if err != nil {
+		return &User{}, nil
+	}
+	fmt.Print(u.Username)
+
+	return &u, nil
+}
