@@ -18,15 +18,16 @@ Run the following in order, might need to copy the command in the make file and 
 Postgres server is in detached mode
 
 Install Golang-migrate
-- https://github.com/golang-migrate/migrate/blob/master/cmd/migrate/README.md
+- https://www.geeksforgeeks.org/how-to-install-golang-migrate-on-ubuntu/
 
 Create postgres tables, kinda like git for db tables
-`make createmigration`
-`make migrateup`
+- `make createmigration`
+- `make migrateup`
 
 
 Check docker db tables
-`make postgres`
-`\l`
+- `make postgres`
+- `\l`
+- 
 Connect to go-chat db: `\c go-chat`
 TO get items `\d`
