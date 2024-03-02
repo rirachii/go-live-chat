@@ -1,0 +1,135 @@
+{{ define "hub"}}
+
+<!DOCTYPE html>
+
+<html>
+
+
+<head>
+    <meta charset="utf-8">
+	<title>A static page</title>
+	<link rel="stylesheet" type="text/css" href="/css/main.css">
+
+
+</head>
+
+<style>
+    .chatrooms-container{
+        display: grid;
+        grid-gap: 0.5rem;
+    }
+
+    .chatroom-item{
+        padding: 0.5rem;
+        border: 1px solid black;
+    }
+</style>
+
+<body>
+    <h1>
+        Welcome to the chat hub!
+        <span id="user-display-name"></span>
+    </h1>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            injectDisplayName();
+        });
+    </script>
+
+    <a href="/landing">Back to homepage</a>
+    <br>
+
+    
+    <label for="change-display-name">Change your display name here!</label>
+    <input type="text" id="change-display-name" name="change-display-name">
+    <button onclick="setDisplayName(document.getElementById('change-display-name').value)"> Change </button>
+
+
+    <form
+        id="room-creation"
+        hx-post="/hub/create-room"
+        hx-vals='js:{"display-name": getDisplayName()}'
+        hx-include="this"
+        hx-ext="json-enc"
+        hx-target=".chatrooms-container"
+        hx-swap="afterbegin"
+    >
+        <label for="room-name">Create a room here: </label>
+        <input type="text" name="room-name" placeholder="Ur mom's room" required>
+
+        <button type="submit"> Create room! </button>
+
+    </form>
+
+    <h2> Join a room! </h2>
+
+    <div class="chatrooms">
+        <button type="button"
+            hx-get="/hub/get-rooms"
+            hx-trigger="load, click"
+            hx-target=".chatrooms-container"
+            hx-swap="innerHTML"
+        >
+            Refresh Rooms
+        </button>
+
+        <div 
+        class="chatrooms-container">
+        </div>
+
+
+    </div>
+
+
+
+    <script src="/js/htmx/htmx.min.js"></script>
+    <script src="/js/htmx/json-enc.js"></script>
+    <script src="/js/localStorage.js"></script>
+    <script src="/js/listenerFunctions.js"></script>
+
+    <!-- <script>
+        document.addEventListener("htmx:beforeRequest", formInjectDisplayName(event));
+
+    </script> -->
+
+
+</body>
+
+</html>
+
+
+
+{{end}}
+
+
+{{ define "hub-chatrooms"}}
+
+    {{ range .Rooms }}
+        
+        <div 
+            class="chatroom-item"
+        >
+            "{{ .RoomName }}" Chatroom 
+
+            <form 
+                id="join-room"
+                style="display: inline;"
+                hx-post="/hub/join/{{ .RoomID }}"
+                hx-vals='js:{"display-name": getDisplayName()}'
+                hx-include="this"
+                hx-ext="json-enc"
+                hx-swap="none"    
+            >
+                <input type="hidden" name="room-id" value="{{ .RoomID }}">
+    
+                <button type="submit">
+                    Join
+                </button>
+            </form>
+
+
+        </div>
+
+    {{ end }}
+
+{{end}}

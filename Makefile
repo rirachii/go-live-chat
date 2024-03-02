@@ -1,5 +1,5 @@
 run:
-	@go run server/routes.go server/server.go
+	@go run server/routes.go server/template.go server/server.go
 
 postgresinit:
 	docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:15-alpine
