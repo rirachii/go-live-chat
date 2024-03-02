@@ -17,7 +17,9 @@ Run the following in order, might need to copy the command in the make file and 
 - `make createdb` 
 Postgres server is in detached mode
 
-Golang-migrate
+Install Golang-migrate
+- https://github.com/golang-migrate/migrate/blob/master/cmd/migrate/README.md
+
 Create postgres tables, kinda like git for db tables
 `make createmigration`
 `make migrateup`
