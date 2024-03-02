@@ -27,7 +27,7 @@ func HandleCreateUser(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	userHandler.Login(c)
+	userHandler.CreateUser(c)
 
 	return c.Redirect(http.StatusFound, "/landing")
 }

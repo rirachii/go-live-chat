@@ -40,9 +40,9 @@ func InitializeUserRoutes(e *echo.Echo){
 
 
 	
-	e.GET("/login", func(c echo.Context) error { 
-		return c.Redirect(http.StatusFound,"/hub") 
-	})
+	// e.GET("/login", func(c echo.Context) error { 
+	// 	return c.Redirect(http.StatusFound,"/hub") 
+	// })
 
 	e.POST("/signup", handlers.HandleCreateUser)
 	e.POST("/login", handlers.HandleLogin)
