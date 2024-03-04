@@ -1,4 +1,4 @@
-package chat
+package service
 
 import (
 	"fmt"
@@ -6,25 +6,6 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 )
-
-
-
-func InitiateHub() (*ChatroomsHub, *HubHandler) {
-
-	hub := &ChatroomsHub{
-		ChatRooms:       make(map[RoomID]*Chatroom),
-		UserChatrooms:   make(map[UserID]SetOfChatrooms),
-		RegisterQueue:   make(chan *User),
-		UnregisterQueue: make(chan *User),
-	}
-
-	handler := &HubHandler{
-		Hub: hub,
-	}
-
-	return hub, handler
-}
-
 
 
 func HandleGetChatroomWebsocket(c echo.Context) error {

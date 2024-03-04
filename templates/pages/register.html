@@ -7,7 +7,7 @@
 
 <head>
     <meta charset="utf-8">
-	<title>A static page</title>
+	<title>Register</title>
 	<link rel="stylesheet" type="text/css" href="/css/main.css">
 
 
@@ -21,7 +21,14 @@
         <a href="/landing"> back to home</a>
     </div>
 
-    <form class="register-form" style="display: flex; flex-direction: column;">
+    <form hx-post="/register" class="register-form" style="display: flex; flex-direction: column;">
+        <label for="email"><b>Email:</b></label>
+        <input type="text" 
+            placeholder="Enter Email" 
+            name="email" 
+            minlength="2"
+            required
+        >
 
         <label for="username"><b>Username:</b></label>
         <input type="text" 
@@ -39,12 +46,13 @@
             required
         >
 
-        <button data-hx-post="/register" hx-trigger="click once" hx-swap="none">
+        <button type="submit">
             Register here!
         </button>
-
-
     </form>
+
+    <a href="login">LOGIN here!</a>
+
 
     <script src="/js/htmx/htmx.min.js"></script>
 

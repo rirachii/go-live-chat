@@ -1,4 +1,4 @@
-package chat
+package model
 
 import (
 	echo "github.com/labstack/echo/v4"
@@ -7,7 +7,7 @@ import (
 type UserID string
 type RoomID string
 
-type User struct {
+type UserRoom struct {
 	UserID UserID
 	RoomID RoomID
 }
@@ -15,8 +15,8 @@ type User struct {
 type ChatroomsHub struct {
 	ChatRooms       map[RoomID]*Chatroom
 	UserChatrooms   map[UserID]SetOfChatrooms // userid -> their chatrooms (room ids)
-	RegisterQueue   chan *User
-	UnregisterQueue chan *User
+	RegisterQueue   chan *UserRoom
+	UnregisterQueue chan *UserRoom
 }
 
 func (hub *ChatroomsHub) Run() {
@@ -78,7 +78,7 @@ func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *Chatroom) error {
 
 }
 
-func (hub ChatroomsHub) getChatroom(roomID RoomID) *Chatroom {
+func (hub ChatroomsHub) GetChatroom(roomID RoomID) *Chatroom {
 
 	getChatroom, ok := hub.ChatRooms[roomID]
 
