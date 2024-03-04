@@ -1,4 +1,4 @@
-package chat
+package handler
 
 import (
 	"fmt"
@@ -6,15 +6,33 @@ import (
 	"strconv"
 
 	echo "github.com/labstack/echo/v4"
+	"github.com/rirachii/golivechat/model"
+
 )
 
 type HubHandler struct {
-	Hub *ChatroomsHub
+	Hub *model.ChatroomsHub
 }
 
 type hubChatroom struct {
-	RoomID   RoomID
+	RoomID   model.RoomID
 	RoomName string
+}
+
+func InitiateHub() (*model.ChatroomsHub, *HubHandler) {
+
+	hub := &model.ChatroomsHub{
+		ChatRooms:       make(map[model.RoomID]*model.Chatroom),
+		UserChatrooms:   make(map[model.UserID]model.SetOfChatrooms),
+		RegisterQueue:   make(chan *model.UserRoom),
+		UnregisterQueue: make(chan *model.UserRoom),
+	}
+
+	handler := &HubHandler{
+		Hub: hub,
+	}
+
+	return hub, handler
 }
 
 func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
@@ -27,7 +45,7 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 
 	for roomID, room := range chatrooms {
 
-		roomName := room.getName()
+		roomName := room.GetName()
 		roomData := hubChatroom{
 			RoomName: roomName,
 			RoomID:   roomID,
@@ -62,11 +80,11 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	// TODO check if room already exists
 
 	// id := newRoomRequest.RoomID
-	var rid RoomID = RoomID(strconv.Itoa(len(handler.Hub.ChatRooms)))
+	var rid model.RoomID = model.RoomID(strconv.Itoa(len(handler.Hub.ChatRooms)))
 	uid := newRoomRequest.UserID
 	name := newRoomRequest.RoomName
 
-	newRoom := NewChatroom(UserID(uid), rid, name)
+	newRoom := model.NewChatroom(model.UserID(uid), rid, name)
 	handler.Hub.AddandOpenRoom(newRoom)
 
 	// return echo.ErrNotImplemented
@@ -104,10 +122,10 @@ func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 
 	// roomHandler := handler.Hub.chatRooms[rid]
 
-	user := &User{
+	user := &model.UserRoom{
 		// WebSocket: nil,
-		UserID: UserID(uid),
-		RoomID: RoomID(rid),
+		UserID: model.UserID(uid),
+		RoomID: model.RoomID(rid),
 	}
 
 	handler.Hub.RegisterQueue <- user
@@ -124,7 +142,7 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 	// TODO handle unauthorized access to page
 
 	roomID := c.Param("roomID")
-	getChatroom := handler.Hub.ChatRooms[RoomID(roomID)]
+	getChatroom := handler.Hub.ChatRooms[model.RoomID(roomID)]
 
 	return getChatroom.RenderChatroomPage(c)
 
@@ -149,9 +167,9 @@ func (handler *HubHandler) HandleUserLeave(c echo.Context) error {
 
 	uid, rid := unregisterRequest.UserID, unregisterRequest.RoomID
 
-	user := &User{
-		UserID: UserID(uid),
-		RoomID: RoomID(rid),
+	user := &model.UserRoom{
+		UserID: model.UserID(uid),
+		RoomID: model.RoomID(rid),
 	}
 
 	handler.Hub.UnregisterQueue <- user
@@ -169,7 +187,7 @@ func (handler *HubHandler) HandleChatroomWSConnection(c echo.Context) error {
 
 	// check user ID
 
-	getChatroom := handler.Hub.ChatRooms[RoomID(roomID)]
+	getChatroom := handler.Hub.ChatRooms[model.RoomID(roomID)]
 
 	return getChatroom.HandleNewConnection(c)
 
@@ -178,7 +196,7 @@ func (handler *HubHandler) HandleChatroomWSConnection(c echo.Context) error {
 func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 
 	roomID := c.Param("roomID")
-	getChatroom := handler.Hub.getChatroom(RoomID(roomID))
+	getChatroom := handler.Hub.GetChatroom(model.RoomID(roomID))
 
 	return getChatroom.HandleChatroomLogs(c)
 }
@@ -186,7 +204,9 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
 	roomID := c.Param("roomID")
-	getChatroom := handler.Hub.getChatroom(RoomID(roomID))
+	getChatroom := handler.Hub.GetChatroom(model.RoomID(roomID))
 
 	return getChatroom.HandleNewMessage(c)
 }
+
+

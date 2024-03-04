@@ -1,4 +1,4 @@
-package users
+package service
 
 import (
 	"context"
@@ -7,42 +7,47 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	utils "github.com/rirachii/golivechat/util"
+	"github.com/rirachii/golivechat/model"
 )
 
-type service struct {
-	Repository
-	timeout time.Duration
+type UserService interface {
+	CreateUser(c context.Context, req *model.CreateUserReq) (*model.CreateUserRes, error)
+	Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error)
 }
 
-func NewService(repository Repository) Service {
+type service struct {
+	UserRepository UserRepository
+	timeout        time.Duration
+}
+
+func NewService(repository UserRepository) UserService {
 	return &service{
 		repository,
 		time.Duration(2) * time.Second,
 	}
 }
 
-func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUserRes, error) {
+func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*model.CreateUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
-	hashPassword, err := utils.HashPassword(req.Password)
+	hashPassword, err := HashPassword(req.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	u := &User{
+	u := &model.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashPassword,
 	}
 
-	r, err := s.Repository.CreateUser(ctx, u)
+	r, err := s.UserRepository.CreateUser(ctx, u)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &CreateUserRes{
+	res := &model.CreateUserRes{
 		ID:       strconv.Itoa(int(r.ID)),
 		Username: r.Username,
 		Email:    r.Email,
@@ -52,7 +57,7 @@ func (s *service) CreateUser(c context.Context, req *CreateUserReq) (*CreateUser
 }
 
 const (
-	secretKey = "secret"
+	secretKey = "TODO_change_to_something_better_secret"
 )
 
 type MyJWTClaims struct {
@@ -63,22 +68,23 @@ type MyJWTClaims struct {
 
 // Valid implements jwt.Claims.
 func (MyJWTClaims) Valid() error {
+	//TODO Check if jwt in cookie is valid
 	panic("unimplemented")
 }
 
-func (s *service) Login(c context.Context, req *LoginUserReq) (*LoginUserRes, error) {
+func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
-	
-	u, err := s.Repository.GetUserByEmail(ctx, req.Email)
+
+	u, err := s.UserRepository.GetUserByEmail(ctx, req.Email)
 	fmt.Println("Login called")
 	if err != nil {
-		return &LoginUserRes{}, err
+		return &model.LoginUserRes{}, err
 	}
 
-	err = utils.CheckPassword(req.Password, u.Password)
+	err = CheckPassword(req.Password, u.Password)
 	if err != nil {
-		return &LoginUserRes{}, err
+		return &model.LoginUserRes{}, err
 	}
 
 	//generate jwt golang package
@@ -93,8 +99,9 @@ func (s *service) Login(c context.Context, req *LoginUserReq) (*LoginUserRes, er
 
 	ss, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return &LoginUserRes{}, err
+		return &model.LoginUserRes{}, err
 	}
 
-	return &LoginUserRes{accessToken: ss, Username: u.Username, ID: strconv.Itoa(int(u.ID))}, nil
+	LoginRes := model.NewLoginUserRes(ss, u.Username, strconv.Itoa(int(u.ID)))
+	return &LoginRes, nil
 }

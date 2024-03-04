@@ -1,6 +1,4 @@
-package users
-
-import "context"
+package model
 
 type User struct {
 	ID       int64  `json:"id" db:"id"`
@@ -32,16 +30,15 @@ type LoginUserRes struct {
 	Username    string `json:"username" db:"username"`
 }
 
-type Repository interface {
-	CreateUser(ctx context.Context, user *User) (*User, error)
-	GetUserByEmail(ctx context.Context, email string) (*User, error)
-}
-
-type Service interface {
-	CreateUser(c context.Context, req *CreateUserReq) (*CreateUserRes, error)
-	Login(c context.Context, req *LoginUserReq) (*LoginUserRes, error)
-}
 
 func (user User) DisplayName() string {
 	return user.Username
+}
+
+func NewLoginUserRes(token, id, username string) LoginUserRes {
+	return LoginUserRes{token, id, username}
+}
+
+func (r *LoginUserRes) GetAccessToken() string {
+	return r.accessToken
 }

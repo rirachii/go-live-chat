@@ -7,20 +7,40 @@
 
 <head>
     <meta charset="utf-8">
-	<title>A static page</title>
+    <title>Login</title>
+
 	<link rel="stylesheet" type="text/css" href="/css/main.css">
-
-
-
 </head>
 
 <body>
     <h1>Hello World!</h1>
     <h2> {{ .Title }}</h2>
-    <button hx-get="/random-msgs"> Get random </button>
 
 
     <br>
+    
+    <form hx-post="/login" class="login-form" style="display: flex; flex-direction: column;">
+        <label for="email"><b>Email:</b></label>
+        <input type="text" 
+            placeholder="Enter Email" 
+            name="email" 
+            minlength="2"
+            required
+        >
+
+        <label for="password"><b>Password:</b></label>
+        <input type="password" 
+            placeholder="Enter your password" 
+            name="password" 
+            minlength="2"
+            required
+        >
+
+        <button type="submit">
+            LOGIN!
+        </button>
+    </form>
+
     <a href="register">Register here!</a>
 
 

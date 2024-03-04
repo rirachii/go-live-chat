@@ -1,8 +1,13 @@
+export PORT=:8080
+
 run:
-	@go run server/routes.go server/template.go server/server.go
+	PORT=${PORT} go run cmd/main.go
 
 postgresinit:
 	docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:15-alpine
+
+postgresup:
+	docker start postgres15
 
 postgres:
 	docker exec -it postgres15 psql
