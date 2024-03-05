@@ -10,12 +10,16 @@ import (
 
 func HandleGetChatroomWebsocket(c echo.Context) error {
 
-	roomID := c.Param("roomID")
-	echo.New().Logger.Printf(c.QueryString())
+	var (
+		userID = c.QueryParam("userID")
+		roomID = c.Param("roomID")
+
+	)
 
 
 	roomData := map[string]string{
-		"ConnectionRoute": fmt.Sprintf("/hub/chatroom/%s/ws", roomID),
+		// TODO change userID to be token
+		"ConnectionRoute": fmt.Sprintf("/hub/chatroom/%s/ws?userID=%s", roomID, userID),
 		"RoomID": roomID,
 	}
 

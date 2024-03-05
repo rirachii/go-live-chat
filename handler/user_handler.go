@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/rirachii/golivechat/model"
-	"github.com/rirachii/golivechat/service"
-	"github.com/rirachii/golivechat/service/db"
+	echo "github.com/labstack/echo/v4"
+	model "github.com/rirachii/golivechat/model"
+	service "github.com/rirachii/golivechat/service"
+	db "github.com/rirachii/golivechat/service/db"
 )
 
 type Handler struct {
@@ -75,8 +75,7 @@ func (h *Handler) Logout(c echo.Context) {
 	c.JSON(http.StatusOK, "Logout successful")
 }
 
-
-//USER ROUTES HANDLER
+// USER ROUTES HANDLER
 func getUserHandler() (*Handler, error) {
 	dbConn, err := db.NewDatabase()
 	if err != nil {

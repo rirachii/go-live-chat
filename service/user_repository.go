@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/rirachii/golivechat/model"
 
+	model "github.com/rirachii/golivechat/model"
 )
-
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
@@ -26,11 +25,9 @@ type repository struct {
 	db DBTX
 }
 
-
 func NewRepository(db DBTX) UserRepository {
 	return &repository{db: db}
 }
-
 
 func (r *repository) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	var lastInsertId int
@@ -43,7 +40,6 @@ func (r *repository) CreateUser(ctx context.Context, user *model.User) (*model.U
 	user.ID = int64(lastInsertId)
 	return user, nil
 }
-
 
 func (r *repository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	u := model.User{}

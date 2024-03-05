@@ -4,6 +4,7 @@
     <div
     hx-ext="ws"
     ws-connect="{{ .ConnectionRoute }}"
+    hx-vals='{"userID": "test"}'
     hx-target="chat-history"
     hx-swap="afterend"
     >
