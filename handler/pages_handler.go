@@ -12,10 +12,9 @@ func HandleLanding(c echo.Context) error {
 
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
-	
+
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
-
 
 func HandleRegisterPageDisplay(c echo.Context) error {
 	template := "register"

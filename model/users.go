@@ -30,7 +30,6 @@ type LoginUserRes struct {
 	Username    string `json:"username" db:"username"`
 }
 
-
 func (user User) DisplayName() string {
 	return user.Username
 }

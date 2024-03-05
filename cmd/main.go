@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rirachii/golivechat/handler"
+	"github.com/rirachii/golivechat/handler"
 	"github.com/rirachii/golivechat/service"
 )
 
@@ -20,14 +21,8 @@ func main() {
 		Browse: false,
 	}))
 
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-        AllowOrigins: []string{"*"}, // Update with your allowed origins
-        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
-    }))
-
 	e.File("/favicon.ico", "static/public/images/favicon.ico")
 	e.GET("/", redirectToLanding)
-	e.GET("*", redirectToLanding)
 	e.GET("/landing", handler.HandleLanding)
 
 	hub, hubHandler := handler.InitiateHub()
@@ -43,6 +38,10 @@ func main() {
 	e.Logger.Fatal(e.Start(port))
 }
 
+// func SetupEcho(e *echo.Echo){
+
+// }
+
 func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeAPIRoutes(e)
 	InitializeUserAuthRoutes(e)
@@ -56,14 +55,16 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	e.POST("/hub/join/:roomID", hubHandler.HandleUserJoinRequest)
 	e.GET("/hub/chatroom/:roomID", hubHandler.HandleChatroomPage)
 	e.GET("/hub/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
-	e.GET("/hub/chatroom/:roomID/ws", hubHandler.HandleChatroomWSConnection)
+	e.GET("/hub/chatroom/:roomID/ws", hubHandler.HandleChatroomConnection)
 	e.GET("/ws/:roomID", service.HandleGetChatroomWebsocket)
 
 }
 
 func InitializeUserAuthRoutes(e *echo.Echo) {
+func InitializeUserAuthRoutes(e *echo.Echo) {
 	e.GET("/register", handler.HandleRegisterPageDisplay)
 	e.POST("/register", handler.HandleCreateUser)
+
 
 	e.GET("/login", handler.HandleLoginPageDisplay)
 	e.POST("/login", handler.HandleLogin)

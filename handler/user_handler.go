@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/rirachii/golivechat/model"
-	"github.com/rirachii/golivechat/service"
-	"github.com/rirachii/golivechat/service/db"
+	echo "github.com/labstack/echo/v4"
+	model "github.com/rirachii/golivechat/model"
+	service "github.com/rirachii/golivechat/service"
+	db "github.com/rirachii/golivechat/service/db"
 )
 
 type UserHandler struct {
@@ -59,7 +59,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Domain: "localhost", Secure: false, HttpOnly: true})
 	return c.Redirect(http.StatusSeeOther, "/hub")
-	
+
 }
 
 func (h *UserHandler) Logout(c echo.Context) error {
@@ -67,10 +67,8 @@ func (h *UserHandler) Logout(c echo.Context) error {
 	return c.JSON(http.StatusOK, "Logout successful")
 }
 
-
-
 // USER ROUTES HANDLER
-func getUserHandler() (*UserHandler, error) {
+func getUserHandler() (*Handler, error) {
 	dbConn, err := db.NewDatabase()
 	if err != nil {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
@@ -104,6 +102,6 @@ func HandleLogout(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	
+
 	return userHandler.Logout(c)
 }

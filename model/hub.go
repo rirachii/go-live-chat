@@ -4,74 +4,54 @@ import (
 	echo "github.com/labstack/echo/v4"
 )
 
-type UserID string
-type RoomID string
+type ChatroomsHub struct {
+	ChatRooms       map[RoomID]*Chatroom
+	UserChatrooms   map[UserID]UserSetOfChatrooms // userid -> their chatrooms (room ids)
+	RegisterQueue   chan *UserRequest
+	UnregisterQueue chan *UserRequest
+}
 
-type UserRoom struct {
+type UserRequest struct {
 	UserID UserID
 	RoomID RoomID
 }
+type UserID string
+type RoomID string
 
-type ChatroomsHub struct {
-	ChatRooms       map[RoomID]*Chatroom  		// want to store chatroom data to db and query them by user location
-	UserChatrooms   map[UserID]SetOfChatrooms 	// userid -> their chatrooms (room ids) ; also wanna store this info
-	RegisterQueue   chan *UserRoom
-	UnregisterQueue chan *UserRoom
+type ChatroomData struct {
+	RoomID   RoomID
+	RoomName string
+}
+
+type UserSetOfChatrooms struct {
+	ChatroomsSet map[RoomID]bool
 }
 
 type SetOfChatrooms struct {
 	Chatrooms map[RoomID]bool
 }
 
-
-//Handle adding/removing users to rooms 
+// Handle adding/removing users to rooms
 func (hub *ChatroomsHub) Run() {
 	for {
 		select {
-		//when new user want to register to a room 
-		case client := <-hub.RegisterQueue:
-			// add them to the approrpiate chat
-			clientID, roomID := client.UserID, client.RoomID
+		case userReq := <-hub.RegisterQueue:
 
-			userChatrooms, ok := hub.UserChatrooms[clientID]
-			if !ok {
-				hub.UserChatrooms[clientID] = SetOfChatrooms{
-					Chatrooms: make(map[RoomID]bool),
-				}
-				userChatrooms = hub.UserChatrooms[clientID]
-				// log.Printf("user [%s] not found", clientID)
-			}
+			// register them to the approrpiate chat
+			go hub.registerUser(userReq)
 
-			userChatrooms.RegisterRoom(roomID)
+		case userReq := <-hub.UnregisterQueue:
 
-			// chatRoom := hub.ChatRooms[roomID]
-			// // chatRoom.JoinQueue <- client
-
-			echo.New().Logger.Printf("Registering %s to room %s", clientID, roomID)
-			echo.New().Logger.Printf("User [%s] rooms: %i", clientID, userChatrooms)
-
-		case client := <-hub.UnregisterQueue:
-			clientID, roomID := client.UserID, client.RoomID
-
-			// userChatrooms, ok := hub.UserChatrooms[clientID]
-			// if !ok {
-			// 	log.Printf("user [%s] not found", clientID)
-			// }
-
-			// userChatrooms.UnregisterRoom(roomID)
-
-			// chatRoom := hub.ChatRooms[roomID]
-
-			// chatRoom.LeaveQueue <- client
-
-			echo.New().Logger.Printf("Unregistering %s from room %s", clientID, roomID)
+			// unregister them
+			go hub.unRegisterUser(userReq)
 
 		}
 	}
 }
 
 func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *Chatroom) error {
-	roomID := newChatRoom.RoomID
+
+	roomID := newChatRoom.GetRID()
 	hub.ChatRooms[roomID] = newChatRoom
 	go newChatRoom.Open()
 
@@ -87,12 +67,56 @@ func (hub ChatroomsHub) GetChatroom(roomID RoomID) *Chatroom {
 	return getChatroom
 }
 
-
-
-func (rooms *SetOfChatrooms) RegisterRoom(roomID RoomID) {
+func (rooms *UserSetOfChatrooms) RegisterRoom(roomID RoomID) {
 	// TODO be aware does not check if the room is already registered to them
-	rooms.Chatrooms[roomID] = true
+	rooms.ChatroomsSet[roomID] = true
 }
-func (rooms *SetOfChatrooms) UnregisterRoom(roomID RoomID) {
-	delete(rooms.Chatrooms, roomID)
+func (rooms *UserSetOfChatrooms) UnregisterRoom(roomID RoomID) {
+	// TODO does not check for errors
+	delete(rooms.ChatroomsSet, roomID)
+}
+
+func (hub *ChatroomsHub) registerUser(userReq *UserRequest) {
+
+	var (
+		userID = userReq.UserID
+		roomID = userReq.RoomID
+	)
+
+	// TODO use DB
+	userChatrooms, ok := hub.UserChatrooms[userID]
+	if !ok {
+		hub.UserChatrooms[userID] = UserSetOfChatrooms{
+			ChatroomsSet: make(map[RoomID]bool),
+		}
+		userChatrooms = hub.UserChatrooms[userID]
+		// log.Printf("user [%s] not found", clientID)
+	}
+
+	userChatrooms.RegisterRoom(roomID)
+
+	echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
+	echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
+}
+
+func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {
+
+	var (
+		userID = userReq.UserID
+		roomID = userReq.RoomID
+	)
+
+	// userChatrooms, ok := hub.UserChatrooms[clientID]
+	// if !ok {
+	// 	log.Printf("user [%s] not found", clientID)
+	// }
+
+	// userChatrooms.UnregisterRoom(roomID)
+
+	// chatRoom := hub.ChatRooms[roomID]
+
+	// chatRoom.LeaveQueue <- client
+
+	echo.New().Logger.Debugf("Unregistering %s from room %s", userID, roomID)
+
 }
