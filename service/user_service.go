@@ -67,17 +67,6 @@ type MyJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-// Valid implements jwt.Claims.
-// func (MyJWTClaims) Valid() error {
-	// cookie, err := c.Cookie("jwt")
-	// if err != nil {
-	// 	return c.String(http.StatusUnauthorized, "Unauthorized")
-	// }
-	// tokenString := cookie.Value
-	// token, err := jwt.ParseWithClaims(tokenString, &model.MyJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-	// 	return jwtSecret, nil
-	// })
-// }
 
 func ValidateJWT(tokenString string) error {
 	claims := &MyJWTClaims{}

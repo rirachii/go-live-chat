@@ -67,7 +67,7 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 
 	e.GET("/login", handler.HandleLoginPageDisplay)
 	e.POST("/login", handler.HandleLogin)
-	e.GET("/logout", handler.HandleLogout)
+	e.POST("/logout", handler.HandleLogout)
 
 }
 

@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 
@@ -21,7 +21,7 @@ func NewHandler(s service.UserService) *UserHandler {
 	}
 }
 
-func (h *UserHandler) CreateUser(c echo.Context)  {
+func (h *UserHandler) CreateUser(c echo.Context) error {
 	email := c.FormValue("email")
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -29,47 +29,47 @@ func (h *UserHandler) CreateUser(c echo.Context)  {
 
 	if email == "" || username == "" || password == "" {
 		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		// return err
+		return errors.New("email and password field incorrect")
 	}
 
 	_, err := h.UserService.CreateUser(c.Request().Context(), &u)
 	if err != nil {
 		c.JSONBlob(http.StatusInternalServerError, []byte("create user error: "+err.Error()))
-		return 
+		return err
 	}
 
-	c.Redirect(http.StatusOK, "/login")
-
-	// retrun nil
+	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func (h *UserHandler) Login(c echo.Context) {
+func (h *UserHandler) Login(c echo.Context) error {
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 	user := model.LoginUserReq{Email: email, Password: password}
 
 	if email == "" || password == "" {
 		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return
+		return errors.New("email and password field incorrect")
 	}
 
 	u, err := h.UserService.Login(c.Request().Context(), &user)
 	if err != nil {
 		c.JSONBlob(http.StatusInternalServerError, []byte("login user error: "+err.Error()))
-		return
+		return err
 	}
 
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Domain: "localhost", Secure: false, HttpOnly: true})
-	c.Redirect(http.StatusOK, "/hub")
+	return c.Redirect(http.StatusSeeOther, "/hub")
+	
 }
 
-func (h *UserHandler) Logout(c echo.Context) {
+func (h *UserHandler) Logout(c echo.Context) error {
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
-	c.JSON(http.StatusOK, "Logout successful")
+	return c.JSON(http.StatusOK, "Logout successful")
 }
 
 
-//USER ROUTES HANDLER
+
+// USER ROUTES HANDLER
 func getUserHandler() (*UserHandler, error) {
 	dbConn, err := db.NewDatabase()
 	if err != nil {
@@ -85,12 +85,10 @@ func getUserHandler() (*UserHandler, error) {
 func HandleCreateUser(c echo.Context) error {
 	userHandler, err := getUserHandler()
 	if err != nil {
-		fmt.Println("FAILED")
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	userHandler.CreateUser(c)
 
-	return c.Redirect(http.StatusFound, "/login")
+	return userHandler.CreateUser(c)
 }
 
 func HandleLogin(c echo.Context) error {
@@ -98,8 +96,7 @@ func HandleLogin(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	userHandler.Login(c)
-	return c.Redirect(http.StatusFound, "/hub")
+	return userHandler.Login(c)
 }
 
 func HandleLogout(c echo.Context) error {
@@ -107,6 +104,6 @@ func HandleLogout(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	userHandler.Logout(c)
-	return c.Redirect(http.StatusFound, "/landing")
+	
+	return userHandler.Logout(c)
 }

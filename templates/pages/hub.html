@@ -28,8 +28,9 @@
 
 <body>
     <h1>
-        Welcome to the chat hub!
+        Welcome to the chat hub,
         <span id="user-display-name"></span>
+        !
     </h1>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -38,6 +39,8 @@
     </script>
 
     <a href="/landing">Back to homepage</a>
+    <button hx-post="/logout" onclick="location.href='www.yoursite.com'">Logout</button>
+
     <br>
 
     
