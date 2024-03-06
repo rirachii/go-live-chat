@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/rirachii/golivechat/model"
+	jwt "github.com/golang-jwt/jwt/v4"
+	model "github.com/rirachii/golivechat/model"
 )
 
 type UserService interface {

@@ -2,6 +2,10 @@ package model
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
+	// "errors"
 	"html/template"
 	"log"
 	"net/http"
@@ -9,27 +13,27 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	websocket "nhooyr.io/websocket"
-	"nhooyr.io/websocket/wsjson"
+	wsjson "nhooyr.io/websocket/wsjson"
 )
 
-
 type Chatroom struct {
-	RoomID            RoomID
-	RoomName          string
-	RoomOwner         UserID
-	ChatHistory       []*Message
+	roomID    RoomID
+	roomName  string
+	roomOwner UserID
+	chatLogs  []*Message
 	// ClientConnections map[*websocket.Conn]*ClientInfo
 	// AllClients	      []*ClientInfo
-	LiveUsers         map[UserID]*ClientInfo
-	JoinQueue         chan *ChatroomClient
-	LeaveQueue        chan *ChatroomClient
-	BroadcastQueue    chan *Message
+	LiveUsers map[UserID]*ClientInfo
+
+	// TODO change to private fields and make function to add to queues
+	JoinQueue      chan *ChatroomClient
+	LeaveQueue     chan *ChatroomClient
+	BroadcastQueue chan *Message
 }
 
 type ChatroomClient struct {
 	WebSocket *websocket.Conn
-	UserID    UserID
-	RoomID    RoomID
+	UserData  UserRequest
 }
 
 type ClientInfo struct {
@@ -41,7 +45,7 @@ type ClientInfo struct {
 }
 
 type Message struct {
-	RoomID    RoomID
+	RoomID  RoomID
 	From    UserID
 	Content string
 }
@@ -59,38 +63,42 @@ type MessageHTML struct {
 	TextMessage string
 }
 
+func NewChatroom(userReq UserRequest, roomName string) *Chatroom {
 
-func NewChatroom(uid UserID, rid RoomID, roomName string) *Chatroom {
+	var (
+		rid = userReq.RoomID
+		uid = userReq.UserID
+	)
+
 	newRoom := &Chatroom{
-		RoomID:            rid,
-		RoomName:          roomName,
-		RoomOwner:         uid,
-		ChatHistory:       []*Message{},
+		roomID:    rid,
+		roomOwner: uid,
+		roomName:  roomName,
+		chatLogs:  []*Message{},
 		// ClientConnections: make(map[*websocket.Conn]*ClientInfo),
 		// AllClients:        []*ClientInfo{},
-		LiveUsers:         make(map[UserID]*ClientInfo),
-		JoinQueue:         make(chan *ChatroomClient),
-		LeaveQueue:        make(chan *ChatroomClient),
-		BroadcastQueue:    make(chan *Message),
+		LiveUsers:      make(map[UserID]*ClientInfo),
+		JoinQueue:      make(chan *ChatroomClient),
+		LeaveQueue:     make(chan *ChatroomClient),
+		BroadcastQueue: make(chan *Message),
 	}
 
 	return newRoom
 }
 
-
 //Chatroom Functions - maybe create an interface for them?
 //Open(), RenderChatroomPage(), HandleNewMessage(), HandleNewMessage(), HandleChatroomLogs()
 
-//Open chatroom
-//Loop until: ...
-//If recieved a new client on JoinQueue channel
-	//start goroutine for client, in a loop wait for client to write to their ws, then we will read it from the websocket and send it to the BroadcastQueue channel for everybody to consume
-	//add client as a Chatter in this room
-//If recieved a client on Leave queue channel
-	//TODO: remove client  from room
-//If chat recieves new message on BroadcastQueue channel from some user
-	//TODO: Add message to db 
-	//Send new message to every LiveUser in the room
+// Open chatroom
+// Loop until: ...
+// If recieved a new client on JoinQueue channel
+// start goroutine for client, in a loop wait for client to write to their ws, then we will read it from the websocket and send it to the BroadcastQueue channel for everybody to consume
+// add client as a Chatter in this room
+// If recieved a client on Leave queue channel
+// TODO: remove client  from room
+// If chat recieves new message on BroadcastQueue channel from some user
+// TODO: Add message to db
+// Send new message to every LiveUser in the room
 func (room *Chatroom) Open() {
 	for {
 		select {
@@ -99,148 +107,92 @@ func (room *Chatroom) Open() {
 
 			log.Println("new user joined!")
 
-			//wait for msg from client, braodcast new msg to room
-			go func(client *ChatroomClient) {
-				ws := client.WebSocket
+			// will wait for msg from client, braodcast new msg to room
 
-				for {
-					var messageReceived MessageRequest
-					readErr := wsjson.Read(context.TODO(), ws, &messageReceived)
-					// TODO handle err
-					if readErr != nil {
-						// log.Panicln(readErr.Error())
-						room.LeaveQueue <- client
-						return
-					}
-					newMessage := Message{
-						RoomID:    RoomID(messageReceived.RoomID),
-						From:    UserID(messageReceived.UserID),
-						Content: messageReceived.UserMessage,
-					}
+			go room.clientListenWS(client)
 
-					//why do we send out the msg we read? where is this used?
-					//wait i think we are waiting for new mesage FROM user so then we have to send it out to everybody
-					room.BroadcastQueue <- &newMessage
-					log.Print(messageReceived)
-				}
-			}(client)
-
-			//add user to room LiveUsers 
+			//add user to room LiveUsers
 			newClient := &ClientInfo{
 				Client:       client,
 				Conn:         client.WebSocket,
 				Role:         "chatter",
-				RoomID:       string(client.RoomID),
+				RoomID:       string(client.UserData.RoomID),
 				MessageQueue: make(chan *Message),
 			}
-			room.LiveUsers[client.UserID] = newClient
+
+			room.LiveUsers[client.UserData.UserID] = newClient
 
 		case client := <-room.LeaveQueue:
 			echo.New().Logger.Printf("user leaving room! joined LEAVE queue!")
 
-			delete(room.LiveUsers, client.UserID)
+			delete(room.LiveUsers, client.UserData.UserID)
 			client.WebSocket.CloseNow()
 
 		case newMessage := <-room.BroadcastQueue:
+
+			// TODO extract into own function
 			echo.New().Logger.Printf("new message to broadcast -> %i", newMessage)
 
 			// TODO add to db
 			room.logMessage(newMessage)
 
 			for _, user := range room.LiveUsers {
-				log.Println("attempting to write to every user's ws")
-
-				userWS := user.Conn
-				wsWriter, writeErr := userWS.Writer(
-					context.TODO(),
-					websocket.MessageText,
-				)
-				// TODO if websocket closed handle it, remove from connections, etc.
-				if writeErr != nil {
-					log.Println(`error creating ws writer!`, writeErr.Error())
-					continue
-				} 
-
-				log.Println("writer opened")
-
-				// TODO better way to do this
-				chatroomTemplates := template.Must(template.ParseFiles("templates/pages/chatroom.html"))
-				singleMessageTemplate := chatroomTemplates.Lookup("single-message")
-
-				templateData := MessageHTML{
-					DivID:       "chat-messages",
-					PrependMsg:  false,
-					DisplayName: string(newMessage.From),
-					TextMessage: newMessage.Content,
-				}
-
-				log.Printf("msg created: %v", templateData)
-
-				singleMessageTemplate.Execute(
-					wsWriter,
-					&templateData,
-				)
-
-				wsWriter.Close()
+				go room.broadcastToUser(user, newMessage)
 			}
-		//TODO handle deletion of chatroom, remove and close everything
-		// case <-done:
-			//handle deletion of 
+
+			//TODO handle deletion of chatroom, remove and close everything
+			// case <-done:
+			//handle deletion of
 		}
 	}
 
 }
 
+func (room *Chatroom) GetChatroomData() ChatroomData {
 
-func (room *Chatroom) RenderChatroomPage(c echo.Context) error {
+	// TODO check for unauthorized access, maybe add err as return?
 
-	// TODO check for unauthorized access
-
-	const chatroomTemplate = "chatroom"
-	templateData := map[string]string{
-		"RoomName": room.RoomName,
-		"RoomID":   string(room.RoomID),
+	chatroomData := ChatroomData{
+		RoomID:   room.roomID,
+		RoomName: room.roomName,
 	}
 
-	return c.Render(http.StatusOK, chatroomTemplate, templateData)
+	return chatroomData
+
 }
 
-
-//used in hub_handler
-func (room *Chatroom) HandleNewConnection(c echo.Context) error {
+// used in hub_handler
+func (room *Chatroom) AcceptConnection(c echo.Context, userReq UserRequest) error {
 
 	echo.New().Logger.Printf("New websocket connection received! isWebsocket='%s'", c.IsWebSocket())
 
-	if !c.IsWebSocket() {
-		return c.NoContent(http.StatusBadRequest)
+	var (
+		w = c.Response().Writer
+		r = c.Request()
+	)
+
+	clientWS, connErr := websocket.Accept(w, r, nil)
+
+	if connErr != nil {
+		errorText := fmt.Sprintf("error accepting connection: %v", connErr)
+		return errors.New(errorText)
 	}
 
-	userID := c.Param("userID")
-	roomID := c.Param("roomID")
-
-	// echo.New().Logger.Printf(" data received... %i", User{
-	// 	UserID: UserID(userID),
-	// 	RoomID: RoomID(roomID),
-	// })
-
-	clientWS, err := websocket.Accept(c.Response().Writer, c.Request(), nil)
-	// TODO check err
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	room.JoinQueue <- &ChatroomClient{
+	client := &ChatroomClient{
 		WebSocket: clientWS,
-		UserID:    UserID(userID),
-		RoomID:    RoomID(roomID),
+		UserData:  userReq,
 	}
+
+	// echo.New().Logger.Printf("chatroom client: ", client)
+
+	room.JoinQueue <- client
 
 	return nil
 
 }
 
-
-func (room *Chatroom) HandleNewMessage(c echo.Context) error {
+// TODO remove, i dont think this does anything lol
+func (room *Chatroom) ReceiveNewMessage(c echo.Context) error {
 
 	// TODO
 	// get msg, log it, send to broadcast channel
@@ -265,7 +217,7 @@ func (room *Chatroom) HandleNewMessage(c echo.Context) error {
 	messageReceived.RoomID = roomID
 
 	newMessage := Message{
-		RoomID:    RoomID(messageReceived.RoomID),
+		RoomID:  RoomID(messageReceived.RoomID),
 		From:    UserID(messageReceived.UserID),
 		Content: messageReceived.UserMessage,
 	}
@@ -275,13 +227,13 @@ func (room *Chatroom) HandleNewMessage(c echo.Context) error {
 	return nil
 }
 
-func (room *Chatroom) HandleChatroomLogs(c echo.Context) error {
-	echo.New().Logger.Printf("get Chat history request received")
-	log.Printf("current chat log: %v", room.getChatLogs())
+func (room *Chatroom) GetChatroomHistory(c echo.Context) map[string][]MessageHTML {
+
+	echo.New().Logger.Debugf("Current chat history: %v", room.getChatLogs())
 
 	chatHistory := room.getChatLogs()
 
-	msgsData := map[string][]MessageHTML{}
+	chatHistoryData := map[string][]MessageHTML{}
 	const messagesLoopID = "ChatMessages"
 
 	for _, chatMessage := range chatHistory {
@@ -295,35 +247,91 @@ func (room *Chatroom) HandleChatroomLogs(c echo.Context) error {
 			TextMessage: chatMessage.Content,
 		}
 
-		msgsData[messagesLoopID] = append(msgsData[messagesLoopID], singleMsgData)
+		chatHistoryData[messagesLoopID] = append(chatHistoryData[messagesLoopID], singleMsgData)
 	}
 
-	log.Print(msgsData)
-
-	const msgsTemplateID = "many-messages"
-	return c.Render(http.StatusOK, msgsTemplateID, msgsData)
+	return chatHistoryData
 
 }
 
-
-func HandleCreateChatRoom(c echo.Context) error {
-	return nil
-}
-
-
-
-func (room *Chatroom) getChatLogs() []*Message {
-	return room.ChatHistory
-}
-
-func (room *Chatroom) logMessage(msg *Message) {
-	room.ChatHistory = append(room.ChatHistory, msg)
-}
-
-func (room *Chatroom) GetRID() string {
-	return string(room.RoomID)
+func (room *Chatroom) GetRID() RoomID {
+	return room.roomID
 }
 
 func (room *Chatroom) GetName() string {
-	return room.RoomName
+	return room.roomName
+}
+
+func (room *Chatroom) getChatLogs() []*Message {
+	return room.chatLogs
+}
+
+func (room *Chatroom) logMessage(msg *Message) {
+	room.chatLogs = append(room.chatLogs, msg)
+}
+
+// run with go routine
+// not 100% sure handling leaving is working
+func (room *Chatroom) clientListenWS(client *ChatroomClient) {
+
+	ws := client.WebSocket
+
+	for {
+		var messageReceived MessageRequest
+		readErr := wsjson.Read(context.TODO(), ws, &messageReceived)
+		// TODO handle err
+		if readErr != nil {
+			// log.Panicln(readErr.Error())
+			room.LeaveQueue <- client
+			return
+		}
+		newMessage := Message{
+			RoomID:  RoomID(messageReceived.RoomID),
+			From:    UserID(messageReceived.UserID),
+			Content: messageReceived.UserMessage,
+		}
+
+		//why do we send out the msg we read? where is this used?
+		//wait i think we are waiting for new mesage FROM user so then we have to send it out to everybody
+		// ^^ yea once we read the message, we broadcast it
+		room.BroadcastQueue <- &newMessage
+		log.Print(messageReceived)
+	}
+}
+
+func (room *Chatroom) broadcastToUser(user *ClientInfo, msg *Message) {
+	// TODO tell room when an error occurs
+	log.Println("attempting to write to every user's ws")
+
+	userWS := user.Conn
+	wsWriter, writeErr := userWS.Writer(
+		context.TODO(),
+		websocket.MessageText,
+	)
+
+	// TODO if websocket closed handle it, remove from connections, etc.
+	if writeErr != nil {
+		log.Println(`error creating ws writer!`, writeErr.Error())
+		return
+	}
+
+	// TODO better way to do this
+	chatroomTemplates := template.Must(template.ParseFiles("templates/pages/chatroom.html"))
+	singleMessageTemplate := chatroomTemplates.Lookup("single-message")
+
+	templateData := MessageHTML{
+		DivID:       "chat-messages",
+		PrependMsg:  false,
+		DisplayName: string(msg.From),
+		TextMessage: msg.Content,
+	}
+
+	log.Printf("msg created: %v", templateData)
+
+	singleMessageTemplate.Execute(
+		wsWriter,
+		&templateData,
+	)
+
+	wsWriter.Close()
 }
