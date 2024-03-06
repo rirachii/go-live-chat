@@ -13,19 +13,24 @@ type UserRoom struct {
 }
 
 type ChatroomsHub struct {
-	ChatRooms       map[RoomID]*Chatroom
-	UserChatrooms   map[UserID]SetOfChatrooms // userid -> their chatrooms (room ids)
+	ChatRooms       map[RoomID]*Chatroom  		// want to store chatroom data to db and query them by user location
+	UserChatrooms   map[UserID]SetOfChatrooms 	// userid -> their chatrooms (room ids) ; also wanna store this info
 	RegisterQueue   chan *UserRoom
 	UnregisterQueue chan *UserRoom
 }
 
-func (hub *ChatroomsHub) Run() {
+type SetOfChatrooms struct {
+	Chatrooms map[RoomID]bool
+}
 
+
+//Handle adding/removing users to rooms 
+func (hub *ChatroomsHub) Run() {
 	for {
 		select {
+		//when new user want to register to a room 
 		case client := <-hub.RegisterQueue:
-			// register them to the approrpiate chat
-
+			// add them to the approrpiate chat
 			clientID, roomID := client.UserID, client.RoomID
 
 			userChatrooms, ok := hub.UserChatrooms[clientID]
@@ -46,7 +51,6 @@ func (hub *ChatroomsHub) Run() {
 			echo.New().Logger.Printf("User [%s] rooms: %i", clientID, userChatrooms)
 
 		case client := <-hub.UnregisterQueue:
-
 			clientID, roomID := client.UserID, client.RoomID
 
 			// userChatrooms, ok := hub.UserChatrooms[clientID]
@@ -64,36 +68,26 @@ func (hub *ChatroomsHub) Run() {
 
 		}
 	}
-
 }
 
 func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *Chatroom) error {
-
 	roomID := newChatRoom.RoomID
 	hub.ChatRooms[roomID] = newChatRoom
 	go newChatRoom.Open()
 
 	// TODO check errors
 	return nil
-
 }
 
 func (hub ChatroomsHub) GetChatroom(roomID RoomID) *Chatroom {
-
 	getChatroom, ok := hub.ChatRooms[roomID]
-
 	if !ok {
 		return nil
 	}
-
 	return getChatroom
 }
 
 
-
-type SetOfChatrooms struct {
-	Chatrooms map[RoomID]bool
-}
 
 func (rooms *SetOfChatrooms) RegisterRoom(roomID RoomID) {
 	// TODO be aware does not check if the room is already registered to them

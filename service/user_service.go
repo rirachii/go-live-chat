@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -67,9 +68,34 @@ type MyJWTClaims struct {
 }
 
 // Valid implements jwt.Claims.
-func (MyJWTClaims) Valid() error {
-	//TODO Check if jwt in cookie is valid
-	panic("unimplemented")
+// func (MyJWTClaims) Valid() error {
+	// cookie, err := c.Cookie("jwt")
+	// if err != nil {
+	// 	return c.String(http.StatusUnauthorized, "Unauthorized")
+	// }
+	// tokenString := cookie.Value
+	// token, err := jwt.ParseWithClaims(tokenString, &model.MyJWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	// 	return jwtSecret, nil
+	// })
+// }
+
+func ValidateJWT(tokenString string) error {
+	claims := &MyJWTClaims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	// Check if the token is valid
+	if _, ok := token.Claims.(*MyJWTClaims); !ok || !token.Valid {
+		fmt.Println(err)
+		return errors.New("JWT TOKEN NOT VALID")
+	}
+	return nil
 }
 
 func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error) {

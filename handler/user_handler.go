@@ -11,17 +11,17 @@ import (
 	"github.com/rirachii/golivechat/service/db"
 )
 
-type Handler struct {
+type UserHandler struct {
 	UserService service.UserService
 }
 
-func NewHandler(s service.UserService) *Handler {
-	return &Handler{
+func NewHandler(s service.UserService) *UserHandler {
+	return &UserHandler{
 		UserService: s,
 	}
 }
 
-func (h *Handler) CreateUser(c echo.Context) {
+func (h *UserHandler) CreateUser(c echo.Context)  {
 	email := c.FormValue("email")
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -29,21 +29,21 @@ func (h *Handler) CreateUser(c echo.Context) {
 
 	if email == "" || username == "" || password == "" {
 		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return
+		// return err
 	}
 
-	res, err := h.UserService.CreateUser(c.Request().Context(), &u)
+	_, err := h.UserService.CreateUser(c.Request().Context(), &u)
 	if err != nil {
 		c.JSONBlob(http.StatusInternalServerError, []byte("create user error: "+err.Error()))
-		return
+		return 
 	}
 
-	c.JSON(http.StatusOK, res)
-	c.Redirect(http.StatusFound, "/login")
+	c.Redirect(http.StatusOK, "/login")
 
+	// retrun nil
 }
 
-func (h *Handler) Login(c echo.Context) {
+func (h *UserHandler) Login(c echo.Context) {
 	email := c.FormValue("email")
 	password := c.FormValue("password")
 	user := model.LoginUserReq{Email: email, Password: password}
@@ -59,25 +59,18 @@ func (h *Handler) Login(c echo.Context) {
 		return
 	}
 
-	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Path: "/landing", Domain: "localhost", Secure: false, HttpOnly: true})
-
-	// res := &model.LoginUserRes{
-	// 	Username: u.Username,
-	// 	ID:       u.ID,
-	// }
-
-	// c.JSON(http.StatusOK, res)
-	c.Redirect(http.StatusFound, "/hub")
+	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Domain: "localhost", Secure: false, HttpOnly: true})
+	c.Redirect(http.StatusOK, "/hub")
 }
 
-func (h *Handler) Logout(c echo.Context) {
-	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Path: "/landing", Domain: "localhost", Secure: false, HttpOnly: true})
+func (h *UserHandler) Logout(c echo.Context) {
+	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
 	c.JSON(http.StatusOK, "Logout successful")
 }
 
 
 //USER ROUTES HANDLER
-func getUserHandler() (*Handler, error) {
+func getUserHandler() (*UserHandler, error) {
 	dbConn, err := db.NewDatabase()
 	if err != nil {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)

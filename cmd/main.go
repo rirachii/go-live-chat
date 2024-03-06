@@ -6,8 +6,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/rirachii/golivechat/service"
 	"github.com/rirachii/golivechat/handler"
+	"github.com/rirachii/golivechat/service"
 )
 
 func main() {
@@ -20,15 +20,20 @@ func main() {
 		Browse: false,
 	}))
 
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+        AllowOrigins: []string{"*"}, // Update with your allowed origins
+        AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodOptions},
+    }))
 
 	e.File("/favicon.ico", "static/public/images/favicon.ico")
 	e.GET("/", redirectToLanding)
 	e.GET("*", redirectToLanding)
 	e.GET("/landing", handler.HandleLanding)
-	
 
 	hub, hubHandler := handler.InitiateHub()
 	InitializeRoutes(e, hubHandler)
+
+	//TODO: instead we should run when user is logged in securly,
 	go hub.Run()
 
 	port := os.Getenv("PORT")
@@ -38,18 +43,11 @@ func main() {
 	e.Logger.Fatal(e.Start(port))
 }
 
-// func SetupEcho(e *echo.Echo){
-
-	
-// }
-
 func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeAPIRoutes(e)
 	InitializeUserAuthRoutes(e)
 	InitializeHubRoutes(e, hubHandler)
-
 }
-
 
 func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	e.GET("/hub*", handler.HandleHubPage)
@@ -63,23 +61,19 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 
 }
 
-
-func InitializeUserAuthRoutes(e *echo.Echo){
+func InitializeUserAuthRoutes(e *echo.Echo) {
 	e.GET("/register", handler.HandleRegisterPageDisplay)
-	// e.POST("/register", handler.HandleRegisterUser)
 	e.POST("/register", handler.HandleCreateUser)
-	
+
 	e.GET("/login", handler.HandleLoginPageDisplay)
 	e.POST("/login", handler.HandleLogin)
 	e.GET("/logout", handler.HandleLogout)
 
 }
 
-
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)
 }
-
 
 func getRandomMsg(c echo.Context) error {
 	randomMsg := service.RandomMsg()
@@ -89,9 +83,7 @@ func getRandomMsg(c echo.Context) error {
 
 }
 
-
 func redirectToLanding(c echo.Context) error {
 	return c.Redirect(http.StatusPermanentRedirect, "/landing")
 
 }
-

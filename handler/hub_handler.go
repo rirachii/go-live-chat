@@ -19,8 +19,26 @@ type hubChatroom struct {
 	RoomName string
 }
 
-func InitiateHub() (*model.ChatroomsHub, *HubHandler) {
+type createRoomRequest struct {
+	// TODO: user id instead of user display name
+	UserID   string `json:"display-name"`
+	RoomName string `json:"room-name"`
+}
 
+type registerRoomRequest struct {
+	// TODO user ID instaed of user display name
+	UserID string `json:"display-name"`
+	RoomID string `json:"room-id"`
+}
+
+type unRegisterRoomRequest struct {
+	// TODO user ID instaed of user display name
+	UserID string `json:"display-name"`
+	RoomID string `json:"room-id"`
+}
+
+
+func InitiateHub() (*model.ChatroomsHub, *HubHandler) {
 	hub := &model.ChatroomsHub{
 		ChatRooms:       make(map[model.RoomID]*model.Chatroom),
 		UserChatrooms:   make(map[model.UserID]model.SetOfChatrooms),
@@ -36,7 +54,6 @@ func InitiateHub() (*model.ChatroomsHub, *HubHandler) {
 }
 
 func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
-
 	// name of the loop in the template
 	chatrooms := handler.Hub.ChatRooms
 
@@ -44,7 +61,6 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 	const roomsLoopID = "Rooms"
 
 	for roomID, room := range chatrooms {
-
 		roomName := room.GetName()
 		roomData := hubChatroom{
 			RoomName: roomName,
@@ -59,14 +75,9 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 
 }
 
-type createRoomRequest struct {
-	// TODO: user id instead of user display name
-	UserID   string `json:"display-name"`
-	RoomName string `json:"room-name"`
-}
+
 
 func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
-
 	var newRoomRequest createRoomRequest
 
 	err := c.Bind(&newRoomRequest)
@@ -100,14 +111,9 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	return c.Render(http.StatusOK, hubChatroomsTemplateID, templateData)
 }
 
-type registerRoomRequest struct {
-	// TODO user ID instaed of user display name
-	UserID string `json:"display-name"`
-	RoomID string `json:"room-id"`
-}
+
 
 func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
-
 	var registerRequest registerRoomRequest
 	err := c.Bind(&registerRequest)
 	if err != nil {
@@ -138,24 +144,17 @@ func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 }
 
 func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
-
 	// TODO handle unauthorized access to page
 
 	roomID := c.Param("roomID")
 	getChatroom := handler.Hub.ChatRooms[model.RoomID(roomID)]
 
 	return getChatroom.RenderChatroomPage(c)
-
 }
 
-type unRegisterRoomRequest struct {
-	// TODO user ID instaed of user display name
-	UserID string `json:"display-name"`
-	RoomID string `json:"room-id"`
-}
+
 
 func (handler *HubHandler) HandleUserLeave(c echo.Context) error {
-
 	// handler
 	var unregisterRequest unRegisterRoomRequest
 	err := c.Bind(&unregisterRequest)

@@ -5,6 +5,7 @@ Server on port 8080
 ## Versions
 - Ubuntu 22.04
 - Go 1.22
+- Echo - why, bc returns error and uses the orignal handler
 
 ## Setup
 - `sudo snap install docker`
