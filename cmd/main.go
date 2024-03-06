@@ -59,13 +59,13 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 }
 
 func InitializeUserAuthRoutes(e *echo.Echo) {
-	e.GET("/register", handler.HandleRegisterPageDisplay)
-	// e.POST("/register", handler.HandleRegisterUser)
-	e.POST("/register", handler.HandleCreateUser)
+	e.GET("/register", handler.HandleRegisterPage)
+	e.POST("/register", handler.HandleUserRegister)
 
-	e.GET("/login", handler.HandleLoginPageDisplay)
-	e.POST("/login", handler.HandleLogin)
-	e.GET("/logout", handler.HandleLogout)
+	e.GET("/login", handler.HandleLoginPage)
+	e.POST("/login", handler.HandleUserLogin)
+
+	e.GET("/logout", handler.HandleUserLogout)
 
 }
 

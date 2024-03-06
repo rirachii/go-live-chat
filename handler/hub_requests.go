@@ -17,3 +17,14 @@ type LeaveRoomRequest struct {
 	UserID string `json:"display-name"`
 	RoomID string `json:"room-id"`
 }
+
+type ConnectionRequest struct {
+	UserID string `query:"userID"`
+	RoomID string `param:"roomID"`
+}
+
+// TODO add user token
+type RoomRequest struct {
+	UserID string `query:"userID" json:"display-name"`
+	RoomID string `param:"roomID" json:"room-id"`
+}

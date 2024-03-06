@@ -19,9 +19,13 @@
 
     <br>
     
-    <form hx-post="/login" class="login-form" style="display: flex; flex-direction: column;">
+    <form class="login-form" 
+        hx-post="/login"
+        hx-ext="json-enc"
+        style="display: flex; flex-direction: column;"
+    >
         <label for="email"><b>Email:</b></label>
-        <input type="text" 
+        <input type="email" 
             placeholder="Enter Email" 
             name="email" 
             minlength="2"
@@ -45,6 +49,7 @@
 
 
     <script src="/js/htmx/htmx.min.js"></script>
+    <script src="/js/htmx/json-enc.js"></script>
 </body>
 
 </html>

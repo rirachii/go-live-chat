@@ -2,6 +2,9 @@ package model
 
 import (
 	"context"
+	"errors"
+	"fmt"
+
 	// "errors"
 	"html/template"
 	"log"
@@ -106,7 +109,7 @@ func (room *Chatroom) Open() {
 
 			// will wait for msg from client, braodcast new msg to room
 
-			go room.handleClientJoin(client)
+			go room.clientListenWS(client)
 
 			//add user to room LiveUsers
 			newClient := &ClientInfo{
@@ -134,41 +137,9 @@ func (room *Chatroom) Open() {
 			room.logMessage(newMessage)
 
 			for _, user := range room.LiveUsers {
-				log.Println("attempting to write to every user's ws")
-
-				userWS := user.Conn
-				wsWriter, writeErr := userWS.Writer(
-					context.TODO(),
-					websocket.MessageText,
-				)
-				// TODO if websocket closed handle it, remove from connections, etc.
-				if writeErr != nil {
-					log.Println(`error creating ws writer!`, writeErr.Error())
-					continue
-				}
-
-				log.Println("writer opened")
-
-				// TODO better way to do this
-				chatroomTemplates := template.Must(template.ParseFiles("templates/pages/chatroom.html"))
-				singleMessageTemplate := chatroomTemplates.Lookup("single-message")
-
-				templateData := MessageHTML{
-					DivID:       "chat-messages",
-					PrependMsg:  false,
-					DisplayName: string(newMessage.From),
-					TextMessage: newMessage.Content,
-				}
-
-				log.Printf("msg created: %v", templateData)
-
-				singleMessageTemplate.Execute(
-					wsWriter,
-					&templateData,
-				)
-
-				wsWriter.Close()
+				go room.broadcastToUser(user, newMessage)
 			}
+
 			//TODO handle deletion of chatroom, remove and close everything
 			// case <-done:
 			//handle deletion of
@@ -200,30 +171,27 @@ func (room *Chatroom) AcceptConnection(c echo.Context, userReq UserRequest) erro
 		r = c.Request()
 	)
 
-	clientWS, err := websocket.Accept(w, r, nil)
+	clientWS, connErr := websocket.Accept(w, r, nil)
 
-	// echo.New().Logger.Printf("websocket.Accept(), errs?[%v]", clientWS)
-
-	// TODO check err
-	if err != nil {
-		_ = err
-		// return errors.New("Error occurred while accepting websocket")
+	if connErr != nil {
+		errorText := fmt.Sprintf("error accepting connection: %v", connErr)
+		return errors.New(errorText)
 	}
 
 	client := &ChatroomClient{
 		WebSocket: clientWS,
-		UserData: userReq,
+		UserData:  userReq,
 	}
 
-	echo.New().Logger.Printf("chatroom client: ", client)
+	// echo.New().Logger.Printf("chatroom client: ", client)
 
 	room.JoinQueue <- client
-	
 
 	return nil
 
 }
 
+// TODO remove, i dont think this does anything lol
 func (room *Chatroom) ReceiveNewMessage(c echo.Context) error {
 
 	// TODO
@@ -304,9 +272,7 @@ func (room *Chatroom) logMessage(msg *Message) {
 
 // run with go routine
 // not 100% sure handling leaving is working
-func (room *Chatroom) handleClientJoin(client *ChatroomClient) {
-
-	log.Println("new user joined!")
+func (room *Chatroom) clientListenWS(client *ChatroomClient) {
 
 	ws := client.WebSocket
 
@@ -331,4 +297,41 @@ func (room *Chatroom) handleClientJoin(client *ChatroomClient) {
 		room.BroadcastQueue <- &newMessage
 		log.Print(messageReceived)
 	}
+}
+
+func (room *Chatroom) broadcastToUser(user *ClientInfo, msg *Message) {
+	// TODO tell room when an error occurs
+	log.Println("attempting to write to every user's ws")
+
+	userWS := user.Conn
+	wsWriter, writeErr := userWS.Writer(
+		context.TODO(),
+		websocket.MessageText,
+	)
+
+	// TODO if websocket closed handle it, remove from connections, etc.
+	if writeErr != nil {
+		log.Println(`error creating ws writer!`, writeErr.Error())
+		return
+	}
+
+	// TODO better way to do this
+	chatroomTemplates := template.Must(template.ParseFiles("templates/pages/chatroom.html"))
+	singleMessageTemplate := chatroomTemplates.Lookup("single-message")
+
+	templateData := MessageHTML{
+		DivID:       "chat-messages",
+		PrependMsg:  false,
+		DisplayName: string(msg.From),
+		TextMessage: msg.Content,
+	}
+
+	log.Printf("msg created: %v", templateData)
+
+	singleMessageTemplate.Execute(
+		wsWriter,
+		&templateData,
+	)
+
+	wsWriter.Close()
 }

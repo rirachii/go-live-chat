@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -64,24 +62,19 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	var newRoomRequest CreateRoomRequest
 	err := c.Bind(&newRoomRequest)
 	if err != nil {
-		return echo.ErrBadRequest
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	// TODO check if room already exists
-
 	echo.New().Logger.Debugf("Create room request received with data: %i", newRoomRequest)
 
 	// IDs for template
-	const (
-		chatroomsTemplateID = "hub-chatrooms"
-		roomsLoopID         = "Rooms"
-	)
 
 	var (
 		// TODO
-		uid               = newRoomRequest.UserID
+		uid  model.UserID = model.UserID(newRoomRequest.UserID)
 		rid  model.RoomID = model.RoomID(strconv.Itoa(len(handler.Hub.ChatRooms)))
-		name              = newRoomRequest.RoomName
+		name string       = newRoomRequest.RoomName
 	)
 
 	userReq := model.UserRequest{
@@ -92,6 +85,12 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	newRoom := model.NewChatroom(userReq, name)
 	handler.Hub.AddandOpenRoom(newRoom)
 
+	// send back to client to render new room
+
+	const (
+		chatroomsTemplateID = "hub-chatrooms"
+		roomsLoopID         = "Rooms"
+	)
 	// one room
 	chatroomsData := map[string][]model.ChatroomData{
 		roomsLoopID: {
@@ -111,13 +110,15 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	return c.Render(http.StatusOK, chatroomsTemplateID, chatroomsData)
 }
 
+// Redirection
 func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 
 	var joinRequest JoinRoomRequest
 	err := c.Bind(&joinRequest)
 	if err != nil {
-		// TODO handle error
-		_ = err
+		if err != nil {
+			return c.NoContent(http.StatusBadRequest)
+		}
 	}
 
 	// TODO make sure user is invited if room is private
@@ -162,9 +163,7 @@ func (handler *HubHandler) HandleUserLeave(c echo.Context) error {
 	var leaveRequest LeaveRoomRequest
 	err := c.Bind(&leaveRequest)
 	if err != nil {
-		// TODO handle error
-		_ = err
-
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	uid, rid := leaveRequest.UserID, leaveRequest.RoomID
@@ -185,20 +184,25 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 	// c.Echo().Logger.Print(c.Request(), c.Request().Body)
 
 	if !c.IsWebSocket() {
-		return errors.New("expected Websocket connection, but was not")
+		errMsg := "expected Websocket connection, but was not"
+		c.Logger().Print(errMsg)
+		return c.NoContent(http.StatusUpgradeRequired)
 	}
 
-	var (
-		uid = c.QueryParam("userID")
-		rid = c.Param("roomID")
-	)
+	var connReq RoomRequest
+	bindErr := c.Bind(&connReq)
+	if bindErr != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+
+	uid, rid := connReq.UserID, connReq.RoomID
 
 	userReq := model.UserRequest{
 		UserID: model.UserID(uid),
 		RoomID: model.RoomID(rid),
 	}
 
-	log.Printf("new user req: [%v]", userReq)
+	// log.Printf("new user req: [%v]", userReq)
 
 	// check user ID
 
@@ -207,13 +211,11 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 	connErr := getChatroom.AcceptConnection(c, userReq)
 	if connErr != nil {
 		// TODO handle err, tell client what error is maybe
-		_ = connErr
-		echo.New().Logger.Print("connection error", connErr)
-		
+		c.Logger().Print("connection error", connErr)
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.NoContent(http.StatusOK)
+	return c.NoContent(http.StatusAccepted)
 
 }
 
@@ -222,6 +224,12 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 	roomID := c.Param("roomID")
 	getChatroom := handler.Hub.GetChatroom(model.RoomID(roomID))
 
+	if getChatroom == nil {
+		// invalid request
+		return c.NoContent(http.StatusBadRequest)
+
+	}
+
 	chatroomHistoryData := getChatroom.GetChatroomHistory(c)
 
 	const msgsTemplateID = "many-messages"
@@ -229,10 +237,19 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 
 }
 
+
+// i dont think this is used at all
 func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
 	roomID := c.Param("roomID")
 	getChatroom := handler.Hub.GetChatroom(model.RoomID(roomID))
+	if getChatroom == nil {
+		// invalid request
+		return c.NoContent(http.StatusBadRequest)
+
+	}
+
+
 
 	return getChatroom.ReceiveNewMessage(c)
 }
