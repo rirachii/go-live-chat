@@ -68,8 +68,8 @@ func (h *UserHandler) Logout(c echo.Context) error {
 }
 
 // USER ROUTES HANDLER
-func getUserHandler() (*Handler, error) {
-	dbConn, err := db.NewDatabase()
+func getUserHandler() (*UserHandler, error) {
+	dbConn, err := db.ConnectDatabase()
 	if err != nil {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
 	}
@@ -80,7 +80,7 @@ func getUserHandler() (*Handler, error) {
 	return userHandler, nil
 }
 
-func HandleCreateUser(c echo.Context) error {
+func HandleUserRegister(c echo.Context) error {
 	userHandler, err := getUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
@@ -89,7 +89,7 @@ func HandleCreateUser(c echo.Context) error {
 	return userHandler.CreateUser(c)
 }
 
-func HandleLogin(c echo.Context) error {
+func HandleUserLogin(c echo.Context) error {
 	userHandler, err := getUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
@@ -97,7 +97,7 @@ func HandleLogin(c echo.Context) error {
 	return userHandler.Login(c)
 }
 
-func HandleLogout(c echo.Context) error {
+func HandleUserLogout(c echo.Context) error {
 	userHandler, err := getUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)

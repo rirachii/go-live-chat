@@ -16,7 +16,7 @@ func HandleLanding(c echo.Context) error {
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
 
-func HandleRegisterPageDisplay(c echo.Context) error {
+func HandleRegisterPage(c echo.Context) error {
 	template := "register"
 	err := checkCookie(c)
 	if err == nil {
@@ -26,7 +26,7 @@ func HandleRegisterPageDisplay(c echo.Context) error {
 	return c.Render(http.StatusOK, template, nil)
 }
 
-func HandleLoginPageDisplay(c echo.Context) error {
+func HandleLoginPage(c echo.Context) error {
 	template := "login"
 	err := checkCookie(c)
 	if err == nil {
@@ -40,14 +40,13 @@ func HandleHubPage(c echo.Context) error {
 	err := checkCookie(c)
 	if err != nil {
 		return c.Redirect(http.StatusSeeOther, "/login")
-		
+
 	}
 
 	hubTemplate := "hub"
 	return c.Render(http.StatusOK, hubTemplate, nil)
-	
-}
 
+}
 
 func checkCookie(c echo.Context) error {
 	cookie, err := c.Cookie("jwt")
@@ -56,7 +55,7 @@ func checkCookie(c echo.Context) error {
 	}
 
 	tokenString := cookie.Value
-	err = service.ValidateJWT(tokenString) 
+	err = service.ValidateJWT(tokenString)
 	if err != nil {
 		echo.New().Logger.Print(err)
 		return err

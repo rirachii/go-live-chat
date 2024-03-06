@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rirachii/golivechat/handler"
-	"github.com/rirachii/golivechat/handler"
 	"github.com/rirachii/golivechat/service"
 )
 
@@ -61,14 +60,13 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 }
 
 func InitializeUserAuthRoutes(e *echo.Echo) {
-func InitializeUserAuthRoutes(e *echo.Echo) {
-	e.GET("/register", handler.HandleRegisterPageDisplay)
-	e.POST("/register", handler.HandleCreateUser)
+	e.GET("/register", handler.HandleRegisterPage)
+	e.POST("/register", handler.HandleUserRegister)
 
+	e.GET("/login", handler.HandleLoginPage)
+	e.POST("/login", handler.HandleUserLogin)
 
-	e.GET("/login", handler.HandleLoginPageDisplay)
-	e.POST("/login", handler.HandleLogin)
-	e.POST("/logout", handler.HandleLogout)
+	e.GET("/logout", handler.HandleUserLogout)
 
 }
 

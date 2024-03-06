@@ -10,6 +10,8 @@ import (
 
 func HandleGetChatroomWebsocket(c echo.Context) error {
 
+
+	// todo use accesstoken
 	var (
 		userID = c.QueryParam("userID")
 		roomID = c.Param("roomID")
