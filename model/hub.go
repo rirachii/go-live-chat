@@ -27,8 +27,16 @@ type UserSetOfChatrooms struct {
 	ChatroomsSet map[RoomID]bool
 }
 
-func (hub *ChatroomsHub) Run() {
+type UserSetOfChatrooms struct {
+	ChatroomsSet map[RoomID]bool
+}
 
+type SetOfChatrooms struct {
+	Chatrooms map[RoomID]bool
+}
+
+// Handle adding/removing users to rooms
+func (hub *ChatroomsHub) Run() {
 	for {
 		select {
 		case userReq := <-hub.RegisterQueue:
@@ -43,7 +51,6 @@ func (hub *ChatroomsHub) Run() {
 
 		}
 	}
-
 }
 
 func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *Chatroom) error {
@@ -54,17 +61,13 @@ func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *Chatroom) error {
 
 	// TODO check errors
 	return nil
-
 }
 
 func (hub ChatroomsHub) GetChatroom(roomID RoomID) *Chatroom {
-
 	getChatroom, ok := hub.ChatRooms[roomID]
-
 	if !ok {
 		return nil
 	}
-
 	return getChatroom
 }
 
@@ -98,6 +101,26 @@ func (hub *ChatroomsHub) registerUser(userReq *UserRequest) {
 
 	echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
 	echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
+}
+
+func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {
+	var (
+		userID = userReq.UserID
+		roomID = userReq.RoomID
+	)
+
+	// userChatrooms, ok := hub.UserChatrooms[clientID]
+	// if !ok {
+	// 	log.Printf("user [%s] not found", clientID)
+	// }
+
+	// userChatrooms.UnregisterRoom(roomID)
+
+	// chatRoom := hub.ChatRooms[roomID]
+
+	// chatRoom.LeaveQueue <- client
+
+	echo.New().Logger.Debugf("Unregistering %s from room %s", userID, roomID)
 }
 
 func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {

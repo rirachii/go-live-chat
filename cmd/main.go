@@ -26,6 +26,8 @@ func main() {
 
 	hub, hubHandler := handler.InitiateHub()
 	InitializeRoutes(e, hubHandler)
+
+	//TODO: instead we should run when user is logged in securly,
 	go hub.Run()
 
 	port := os.Getenv("PORT")
@@ -35,15 +37,11 @@ func main() {
 	e.Logger.Fatal(e.Start(port))
 }
 
-// func SetupEcho(e *echo.Echo){
-
-// }
 
 func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeAPIRoutes(e)
 	InitializeUserAuthRoutes(e)
 	InitializeHubRoutes(e, hubHandler)
-
 }
 
 func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
@@ -64,10 +62,9 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 
 	e.GET("/login", handler.HandleLoginPage)
 	e.POST("/login", handler.HandleUserLogin)
-
 	e.GET("/logout", handler.HandleUserLogout)
-
 }
+
 
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)

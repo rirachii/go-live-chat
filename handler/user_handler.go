@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,17 +12,18 @@ import (
 	db "github.com/rirachii/golivechat/service/db"
 )
 
-type Handler struct {
+type UserHandler struct {
 	UserService service.UserService
 }
 
-func NewHandler(s service.UserService) *Handler {
-	return &Handler{
+func NewHandler(s service.UserService) *UserHandler {
+	return &UserHandler{
 		UserService: s,
 	}
 }
 
-func (h *Handler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
+
+func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
 
 	var createUserReq model.CreateUserReq
 	err := c.Bind(&createUserReq); if err != nil {
@@ -76,13 +78,14 @@ func (h *Handler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPErro
 	return loginRes, nil
 }
 
-func (h *Handler) Logout(c echo.Context) {
-	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Path: "/landing", Domain: "localhost", Secure: false, HttpOnly: true})
-	c.JSON(http.StatusOK, "Logout successful")
+func (h *UserHandler) Logout(c echo.Context) error {
+	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
+	return c.JSON(http.StatusOK, "Logout successful")
 }
 
+
 // USER ROUTES HANDLER
-func getUserHandler() (*Handler, error) {
+func getUserHandler() (*UserHandler, error) {
 	dbConn, err := db.ConnectDatabase()
 	if err != nil {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
@@ -100,6 +103,7 @@ func HandleUserRegister(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
+
 	_, userErr := userHandler.CreateUser(c)
 	if userErr != nil {
 		return c.String(userErr.Code, userErr.Error())
@@ -114,6 +118,7 @@ func HandleUserLogin(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
+
 	loginRes, loginErr := userHandler.LoginUser(c); if loginErr != nil {
 		return c.String(loginErr.Code, loginErr.Error())
 	}
@@ -140,6 +145,7 @@ func HandleUserLogout(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
+
 	userHandler.Logout(c)
 	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)

@@ -14,7 +14,6 @@ type HubHandler struct {
 }
 
 func InitiateHub() (*model.ChatroomsHub, *HubHandler) {
-
 	hub := &model.ChatroomsHub{
 		ChatRooms:       make(map[model.RoomID]*model.Chatroom),
 		UserChatrooms:   make(map[model.UserID]model.UserSetOfChatrooms),
@@ -42,7 +41,6 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 
 	chatrooms := handler.Hub.ChatRooms
 	for roomID, room := range chatrooms {
-
 		roomName := room.GetName()
 		roomData := model.ChatroomData{
 			RoomName: roomName,
@@ -76,6 +74,7 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 		rid  model.RoomID = model.RoomID(strconv.Itoa(len(handler.Hub.ChatRooms)))
 		name string       = newRoomRequest.RoomName
 	)
+
 
 	userReq := model.UserRequest{
 		UserID: model.UserID(uid),
@@ -144,7 +143,6 @@ func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 }
 
 func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
-
 	// TODO handle unauthorized access to page
 
 	roomID := c.Param("roomID")
@@ -158,7 +156,6 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 }
 
 func (handler *HubHandler) HandleUserLeave(c echo.Context) error {
-
 	// handler
 	var leaveRequest LeaveRoomRequest
 	err := c.Bind(&leaveRequest)
@@ -237,7 +234,6 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 
 }
 
-
 // i dont think this is used at all
 func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
@@ -249,7 +245,5 @@ func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
 	}
 
-
-
-	return getChatroom.ReceiveNewMessage(c)
+  return getChatroom.ReceiveNewMessage(c)
 }

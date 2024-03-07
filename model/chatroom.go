@@ -335,3 +335,4 @@ func (room *Chatroom) broadcastToUser(user *ClientInfo, msg *Message) {
 
 	wsWriter.Close()
 }
+

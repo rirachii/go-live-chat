@@ -5,6 +5,11 @@ Server on port 8080
 ## Versions
 - Ubuntu 22.04
 - Go 1.22
+- Echo - why, bc returns error and uses the orignal handler
+
+## To run app
+- `make` to run server on post :8080
+- `sudo make postgresup` to start postgres server, make sure that you have set up postgres successfully.
 
 ## To run app
 - `make` to run server on post :8080
