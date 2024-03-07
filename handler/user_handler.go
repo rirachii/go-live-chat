@@ -21,11 +21,11 @@ func NewHandler(s service.UserService) *UserHandler {
 	}
 }
 
-
 func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
 
 	var createUserReq model.CreateUserReq
-	err := c.Bind(&createUserReq); if err != nil {
+	err := c.Bind(&createUserReq)
+	if err != nil {
 		errorText := fmt.Sprintf("Bad request: %s", err.Error())
 		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
 		return nil, err
@@ -41,10 +41,11 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 		return nil, err
 	}
 
-
 	res, err := h.UserService.CreateUser(c.Request().Context(), &createUserReq)
 	if err != nil {
-		err := echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprint("create user error: ", err))
+		err := echo.NewHTTPError(http.StatusInternalServerError,
+			fmt.Sprint("create user error: ", err),
+		)
 		return nil, err
 	}
 
@@ -52,36 +53,32 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 
 }
 
-func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError){
-
+func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError) {
 
 	var loginReq model.LoginUserReq
-	bindErr := c.Bind(&loginReq); if bindErr != nil {
+	bindErr := c.Bind(&loginReq)
+	if bindErr != nil {
 		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())
 		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
 		return nil, err
 	}
 
-
 	if loginReq.Email == "" || loginReq.Password == "" {
 		return nil, echo.NewHTTPError(http.StatusBadGateway, "A field is empty:", loginReq)
 	}
-
 
 	loginRes, loginErr := h.UserService.Login(c.Request().Context(), &loginReq)
 	if loginErr != nil {
 		return nil, echo.NewHTTPError(http.StatusInternalServerError, "error logging in:", loginErr)
 	}
 
-
 	return loginRes, nil
 }
 
 func (h *UserHandler) Logout(c echo.Context) error {
-	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
+	c.SetCookie(deadJWTCookie())
 	return c.JSON(http.StatusOK, "Logout successful")
 }
-
 
 // USER ROUTES HANDLER
 func getUserHandler() (*UserHandler, error) {
@@ -102,7 +99,6 @@ func HandleUserRegister(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
-
 	_, userErr := userHandler.CreateUser(c)
 	if userErr != nil {
 		return c.String(userErr.Code, userErr.Error())
@@ -118,24 +114,16 @@ func HandleUserLogin(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
-	loginRes, loginErr := userHandler.LoginUser(c); if loginErr != nil {
+	loginRes, loginErr := userHandler.LoginUser(c)
+	if loginErr != nil {
 		return c.String(loginErr.Code, loginErr.Error())
 	}
 
 	accessToken := loginRes.GetAccessToken()
-	log.Println(accessToken)
 
-	c.SetCookie(&http.Cookie{
-		Name: "jwt", 
-		Value: accessToken, 
-		MaxAge: 3600, 
-		Path: "/landing", 
-		Domain: "localhost", 
-		Secure: false, 
-		HttpOnly: true,
-	})
-
+	c.SetCookie(newJWTCookie(accessToken))
 	c.Response().Header().Set("HX-Redirect", "/hub")
+
 	return c.NoContent(http.StatusFound)
 }
 
@@ -148,4 +136,30 @@ func HandleUserLogout(c echo.Context) error {
 	userHandler.Logout(c)
 	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)
+}
+
+func newJWTCookie(jwt string) *http.Cookie {
+	cookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    jwt,
+		MaxAge:   3600,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteDefaultMode,
+	}
+	return cookie
+}
+
+func deadJWTCookie() *http.Cookie {
+	deadCookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		MaxAge:   -1,
+		Domain:   "localhost",
+		Secure:   false,
+		HttpOnly: true,
+	}
+	return deadCookie
 }
