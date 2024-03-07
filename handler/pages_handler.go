@@ -12,7 +12,7 @@ func HandleLanding(c echo.Context) error {
 
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
-	
+
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
 
@@ -63,3 +63,4 @@ func checkCookie(c echo.Context) error {
 	}
 	return nil
 }
+

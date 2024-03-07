@@ -37,6 +37,7 @@ func main() {
 	e.Logger.Fatal(e.Start(port))
 }
 
+
 func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeAPIRoutes(e)
 	InitializeUserAuthRoutes(e)
@@ -62,8 +63,8 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 	e.GET("/login", handler.HandleLoginPage)
 	e.POST("/login", handler.HandleUserLogin)
 	e.GET("/logout", handler.HandleUserLogout)
-
 }
+
 
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)

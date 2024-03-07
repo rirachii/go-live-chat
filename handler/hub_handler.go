@@ -75,6 +75,7 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 		name string       = newRoomRequest.RoomName
 	)
 
+
 	userReq := model.UserRequest{
 		UserID: model.UserID(uid),
 		RoomID: model.RoomID(rid),
@@ -244,5 +245,5 @@ func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
 	}
 
-	return getChatroom.ReceiveNewMessage(c)
+  return getChatroom.ReceiveNewMessage(c)
 }

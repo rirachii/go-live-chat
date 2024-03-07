@@ -27,6 +27,10 @@ type UserSetOfChatrooms struct {
 	ChatroomsSet map[RoomID]bool
 }
 
+type UserSetOfChatrooms struct {
+	ChatroomsSet map[RoomID]bool
+}
+
 type SetOfChatrooms struct {
 	Chatrooms map[RoomID]bool
 }
@@ -97,6 +101,26 @@ func (hub *ChatroomsHub) registerUser(userReq *UserRequest) {
 
 	echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
 	echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
+}
+
+func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {
+	var (
+		userID = userReq.UserID
+		roomID = userReq.RoomID
+	)
+
+	// userChatrooms, ok := hub.UserChatrooms[clientID]
+	// if !ok {
+	// 	log.Printf("user [%s] not found", clientID)
+	// }
+
+	// userChatrooms.UnregisterRoom(roomID)
+
+	// chatRoom := hub.ChatRooms[roomID]
+
+	// chatRoom.LeaveQueue <- client
+
+	echo.New().Logger.Debugf("Unregistering %s from room %s", userID, roomID)
 }
 
 func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {

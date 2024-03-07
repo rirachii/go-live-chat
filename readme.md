@@ -11,6 +11,10 @@ Server on port 8080
 - `make` to run server on post :8080
 - `sudo make postgresup` to start postgres server, make sure that you have set up postgres successfully.
 
+## To run app
+- `make` to run server on post :8080
+- `sudo make postgresup` to start postgres server, make sure that you have set up postgres successfully.
+
 ## Setup
 - `sudo snap install docker`
 - install make ( i forgot cmd )

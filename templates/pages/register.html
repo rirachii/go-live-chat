@@ -20,7 +20,11 @@
         <a href="/landing"> back to home</a>
     </div>
 
-    <form hx-post="/register" class="register-form" style="display: flex; flex-direction: column;" >
+    <form class="register-form" 
+        hx-post="/register" 
+        hx-ext="json-enc"
+        style="display: flex; flex-direction: column;"
+    >
         <label for="email"><b>Email:</b></label>
         <input type="email" 
             placeholder="Enter Email" 
@@ -55,6 +59,8 @@
 
 
     <script src="/js/htmx/htmx.min.js"></script>
+    <script src="/js/htmx/json-enc.js"></script>
+
 
 </body>
 

@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/labstack/echo/v4"
-	"github.com/rirachii/golivechat/model"
-	"github.com/rirachii/golivechat/service"
-	"github.com/rirachii/golivechat/service/db"
+	echo "github.com/labstack/echo/v4"
+	model "github.com/rirachii/golivechat/model"
+	service "github.com/rirachii/golivechat/service"
+	db "github.com/rirachii/golivechat/service/db"
 )
 
 type UserHandler struct {
@@ -22,52 +22,66 @@ func NewHandler(s service.UserService) *UserHandler {
 	}
 }
 
-func (h *UserHandler) CreateUser(c echo.Context) error {
-	email := c.FormValue("email")
-	username := c.FormValue("username")
-	password := c.FormValue("password")
-	u := model.CreateUserReq{Username: username, Email: email, Password: password}
-	fmt.Println(u)
-	if email == "" || username == "" || password == "" {
-		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return errors.New("email and password field empty")
+
+func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
+
+	var createUserReq model.CreateUserReq
+	err := c.Bind(&createUserReq); if err != nil {
+		errorText := fmt.Sprintf("Bad request: %s", err.Error())
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+		return nil, err
 	}
 
-	_, err := h.UserService.CreateUser(c.Request().Context(), &u)
+	if createUserReq.Email == "" ||
+		createUserReq.Username == "" ||
+		createUserReq.Password == "" {
+
+		errorText := fmt.Sprintf("A field is empty: %+v", createUserReq)
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+
+		return nil, err
+	}
+
+
+	res, err := h.UserService.CreateUser(c.Request().Context(), &createUserReq)
 	if err != nil {
-		c.JSONBlob(http.StatusInternalServerError, []byte("create user error: "+err.Error()))
-		return err
+		err := echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprint("create user error: ", err))
+		return nil, err
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/login")
+	return res, nil
+
 }
 
-func (h *UserHandler) Login(c echo.Context) error {
-	email := c.FormValue("email")
-	password := c.FormValue("password")
-	user := model.LoginUserReq{Email: email, Password: password}
+func (h *Handler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError){
 
-	if email == "" || password == "" {
-		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return errors.New("email and password field empty")
+
+	var loginReq model.LoginUserReq
+	bindErr := c.Bind(&loginReq); if bindErr != nil {
+		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+		return nil, err
 	}
 
-	u, err := h.UserService.Login(c.Request().Context(), &user)
-	if err != nil {
-		c.JSONBlob(http.StatusInternalServerError, []byte("login user error: "+err.Error()))
-		return err
+
+	if loginReq.Email == "" || loginReq.Password == "" {
+		return nil, echo.NewHTTPError(http.StatusBadGateway, "A field is empty:", loginReq)
 	}
-	fmt.Println("JWT")
-	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Domain: "localhost", Secure: false, HttpOnly: true})
-	return c.Redirect(http.StatusSeeOther, "/hub")
-	
+
+
+	loginRes, loginErr := h.UserService.Login(c.Request().Context(), &loginReq)
+	if loginErr != nil {
+		return nil, echo.NewHTTPError(http.StatusInternalServerError, "error logging in:", loginErr)
+	}
+
+
+	return loginRes, nil
 }
 
 func (h *UserHandler) Logout(c echo.Context) error {
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
 	return c.JSON(http.StatusOK, "Logout successful")
 }
-
 
 
 // USER ROUTES HANDLER
@@ -89,7 +103,14 @@ func HandleUserRegister(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
-	return userHandler.CreateUser(c)
+
+	_, userErr := userHandler.CreateUser(c)
+	if userErr != nil {
+		return c.String(userErr.Code, userErr.Error())
+	}
+
+	c.Response().Header().Set("HX-Redirect", "/login")
+	return c.NoContent(http.StatusFound)
 }
 
 func HandleUserLogin(c echo.Context) error {
@@ -97,7 +118,26 @@ func HandleUserLogin(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	return userHandler.Login(c)
+
+	loginRes, loginErr := userHandler.LoginUser(c); if loginErr != nil {
+		return c.String(loginErr.Code, loginErr.Error())
+	}
+
+	accessToken := loginRes.GetAccessToken()
+	log.Println(accessToken)
+
+	c.SetCookie(&http.Cookie{
+		Name: "jwt", 
+		Value: accessToken, 
+		MaxAge: 3600, 
+		Path: "/landing", 
+		Domain: "localhost", 
+		Secure: false, 
+		HttpOnly: true,
+	})
+
+	c.Response().Header().Set("HX-Redirect", "/hub")
+	return c.NoContent(http.StatusFound)
 }
 
 func HandleUserLogout(c echo.Context) error {
@@ -105,6 +145,8 @@ func HandleUserLogout(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-	
-	return userHandler.Logout(c)
+
+	userHandler.Logout(c)
+	c.Response().Header().Set("HX-Redirect", "/landing")
+	return c.NoContent(http.StatusFound)
 }
