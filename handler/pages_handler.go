@@ -12,9 +12,10 @@ func HandleLanding(c echo.Context) error {
 
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
-
+	
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
+
 
 func HandleRegisterPage(c echo.Context) error {
 	template := "register"
@@ -40,13 +41,13 @@ func HandleHubPage(c echo.Context) error {
 	err := checkCookie(c)
 	if err != nil {
 		return c.Redirect(http.StatusSeeOther, "/login")
-
 	}
 
 	hubTemplate := "hub"
 	return c.Render(http.StatusOK, hubTemplate, nil)
-
+	
 }
+
 
 func checkCookie(c echo.Context) error {
 	cookie, err := c.Cookie("jwt")
@@ -55,7 +56,7 @@ func checkCookie(c echo.Context) error {
 	}
 
 	tokenString := cookie.Value
-	err = service.ValidateJWT(tokenString)
+	err = service.ValidateJWT(tokenString) 
 	if err != nil {
 		echo.New().Logger.Print(err)
 		return err

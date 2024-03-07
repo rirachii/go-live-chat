@@ -2,13 +2,14 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
-	echo "github.com/labstack/echo/v4"
-	model "github.com/rirachii/golivechat/model"
-	service "github.com/rirachii/golivechat/service"
-	db "github.com/rirachii/golivechat/service/db"
+	"github.com/labstack/echo/v4"
+	"github.com/rirachii/golivechat/model"
+	"github.com/rirachii/golivechat/service"
+	"github.com/rirachii/golivechat/service/db"
 )
 
 type UserHandler struct {
@@ -26,10 +27,10 @@ func (h *UserHandler) CreateUser(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
 	u := model.CreateUserReq{Username: username, Email: email, Password: password}
-
+	fmt.Println(u)
 	if email == "" || username == "" || password == "" {
 		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return errors.New("email and password field incorrect")
+		return errors.New("email and password field empty")
 	}
 
 	_, err := h.UserService.CreateUser(c.Request().Context(), &u)
@@ -48,7 +49,7 @@ func (h *UserHandler) Login(c echo.Context) error {
 
 	if email == "" || password == "" {
 		c.JSONBlob(http.StatusBadRequest, []byte("a field is empty"))
-		return errors.New("email and password field incorrect")
+		return errors.New("email and password field empty")
 	}
 
 	u, err := h.UserService.Login(c.Request().Context(), &user)
@@ -56,16 +57,18 @@ func (h *UserHandler) Login(c echo.Context) error {
 		c.JSONBlob(http.StatusInternalServerError, []byte("login user error: "+err.Error()))
 		return err
 	}
-
+	fmt.Println("JWT")
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: u.GetAccessToken(), MaxAge: 3600, Domain: "localhost", Secure: false, HttpOnly: true})
 	return c.Redirect(http.StatusSeeOther, "/hub")
-
+	
 }
 
 func (h *UserHandler) Logout(c echo.Context) error {
 	c.SetCookie(&http.Cookie{Name: "jwt", Value: "", MaxAge: -1, Domain: "localhost", Secure: false, HttpOnly: true})
 	return c.JSON(http.StatusOK, "Logout successful")
 }
+
+
 
 // USER ROUTES HANDLER
 func getUserHandler() (*UserHandler, error) {
@@ -102,6 +105,6 @@ func HandleUserLogout(c echo.Context) error {
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
-
+	
 	return userHandler.Logout(c)
 }

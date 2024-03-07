@@ -11,8 +11,6 @@
 	<link rel="stylesheet" type="text/css" href="/css/main.css">
     <script src="https://unpkg.com/htmx.org@1.9.8" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
 
-
-
 </head>
 
 <body>
@@ -22,11 +20,7 @@
         <a href="/landing"> back to home</a>
     </div>
 
-    <form class="register-form" 
-        hx-post="/register" 
-        hx-ext="json-enc"
-        style="display: flex; flex-direction: column;"
-    >
+    <form hx-post="/register" class="register-form" style="display: flex; flex-direction: column;" >
         <label for="email"><b>Email:</b></label>
         <input type="email" 
             placeholder="Enter Email" 

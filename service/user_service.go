@@ -92,7 +92,6 @@ func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.Logi
 	defer cancel()
 
 	u, err := s.UserRepository.GetUserByEmail(ctx, req.Email)
-	fmt.Println("Login called")
 	if err != nil {
 		return &model.LoginUserRes{}, err
 	}
