@@ -75,7 +75,6 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 		name string       = newRoomRequest.RoomName
 	)
 
-
 	userReq := model.UserRequest{
 		UserID: model.UserID(uid),
 		RoomID: model.RoomID(rid),
@@ -182,7 +181,7 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 
 	if !c.IsWebSocket() {
 		errMsg := "expected Websocket connection, but was not"
-		c.Logger().Print(errMsg)
+		c.Logger().Debug(errMsg)
 		return c.NoContent(http.StatusUpgradeRequired)
 	}
 
@@ -212,7 +211,9 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	return c.NoContent(http.StatusAccepted)
+	// return nil. Do not write to context after websocket connection is successful.
+	// will get some "hijacked connection" warning
+	return nil
 
 }
 
@@ -245,5 +246,5 @@ func (handler *HubHandler) HandleChatroomMessage(c echo.Context) error {
 
 	}
 
-  return getChatroom.ReceiveNewMessage(c)
+	return getChatroom.ReceiveNewMessage(c)
 }
