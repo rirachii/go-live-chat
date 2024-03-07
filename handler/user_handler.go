@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -53,7 +52,7 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 
 }
 
-func (h *Handler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError){
+func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError){
 
 
 	var loginReq model.LoginUserReq
