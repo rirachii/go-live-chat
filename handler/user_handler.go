@@ -121,6 +121,8 @@ func HandleUserLogin(c echo.Context) error {
 
 	accessToken := loginRes.GetAccessToken()
 
+	log.Println("acess token: ", accessToken)
+
 	c.SetCookie(newJWTCookie(accessToken))
 	c.Response().Header().Set("HX-Redirect", "/hub")
 

@@ -12,7 +12,6 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	GetUserByID(ctx context.Context, email string) (*model.User, error)
-	GetUserByToken(ctx context.Context, email string) (*model.User, error)
 }
 
 // flexibility can pass in transaction instead of db object
@@ -66,24 +65,6 @@ func (r *repository) GetUserByID(ctx context.Context, userID string) (*model.Use
 
 	query := "SELECT id, email, username, password FROM users WHERE id = $1"
 	err := r.db.QueryRowContext(ctx, query, userID).
-		Scan(&u.ID, &u.Email, &u.Username, &u.Password)
-
-	if err != nil {
-		return &model.User{}, nil
-	}
-	fmt.Print(u.Username)
-
-	return &u, nil
-
-}
-
-// TODO i think we should add a token field to user data or a new table of token -> userID
-func (r *repository) GetUserByToken(ctx context.Context, token string) (*model.User, error) {
-
-	u := model.User{}
-
-	query := "SELECT id, email, username, password FROM users WHERE email = $1"
-	err := r.db.QueryRowContext(ctx, query, token).
 		Scan(&u.ID, &u.Email, &u.Username, &u.Password)
 
 	if err != nil {
