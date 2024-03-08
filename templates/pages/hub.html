@@ -9,7 +9,15 @@
     <meta charset="utf-8">
 	<title>Chat Hub</title>
 	<link rel="stylesheet" type="text/css" href="/css/main.css">
-    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <script 
+        src="https://unpkg.com/htmx.org@1.9.10" 
+        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
+        crossorigin="anonymous">
+    </script>
+
+    
+    <script src="/js/htmx/json-enc.js"></script>
+    <script src="/js/listenerFunctions.js"></script>
 
 
 </head>
@@ -29,14 +37,14 @@
 <body>
     <h1>
         Welcome to the chat hub,
-        <span id="user-display-name"></span>
-        !
+        <span id="user-display-name"
+            hx-trigger="load"
+            hx-get="/user/username"
+            hx-swap="outerHTML"
+        >
+        </span> !
     </h1>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            injectDisplayName();
-        });
-    </script>
+
 
     <a href="/landing">Back to homepage</a>
     <button hx-get="/logout" onclick="location.href='/landing'">Logout</button>
@@ -83,11 +91,6 @@
 
     </div>
 
-
-
-    <script src="/js/htmx/json-enc.js"></script>
-    <script src="/js/localStorage.js"></script>
-    <script src="/js/listenerFunctions.js"></script>
 
     <!-- <script>
         document.addEventListener("htmx:beforeRequest", formInjectDisplayName(event));
