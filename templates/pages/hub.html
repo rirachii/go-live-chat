@@ -8,42 +8,27 @@
 <head>
     <meta charset="utf-8">
 	<title>Chat Hub</title>
-	<link rel="stylesheet" type="text/css" href="/css/main.css">
+
+	<link rel="stylesheet" type="text/css" href="/css/globals.css">
+	<link rel="stylesheet" type="text/css" href="/css/hub.css">
+
     <script 
         src="https://unpkg.com/htmx.org@1.9.10" 
         integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
         crossorigin="anonymous">
     </script>
 
-    
     <script src="/js/htmx/json-enc.js"></script>
     <script src="/js/listenerFunctions.js"></script>
 
 
 </head>
 
-<style>
-    .chatrooms-container{
-        display: grid;
-        grid-gap: 0.5rem;
-    }
 
-    .chatroom-item{
-        padding: 0.5rem;
-        border: 1px solid black;
-    }
-</style>
 
 <body>
-    <h1>
-        Welcome to the chat hub,
-        <span id="user-display-name"
-            hx-trigger="load"
-            hx-get="/user/username"
-            hx-swap="outerHTML"
-        >
-        </span> !
-    </h1>
+
+    {{ template "top-header-bar" . }}
 
 
     <a href="/landing">Back to homepage</a>

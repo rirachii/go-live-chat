@@ -83,7 +83,7 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	hub.GET("/chatroom/:roomID", hubHandler.HandleChatroomPage)
 	hub.GET("/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
 	hub.GET("/chatroom/:roomID/ws", hubHandler.HandleChatroomConnection)
-	hub.GET("/ws/:roomID", service.HandleGetChatroomWebsocket)
+	hub.GET("/ws/:roomID", handler.HandleGetChatroomWebsocket)
 
 	//TODO: instead we should run when user is logged in securly,
 	// maybe we can allow guests to join rooms but not create rooms
@@ -101,7 +101,9 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 }
 
 func InitializeUserDataRoutes(e *echo.Echo) {
+
 	e.GET("/user/username", handler.HandleGetUsername)
+	e.GET("/user/profile-pic", handler.HandleGetUserImage)
 }
 
 func InitializeAPIRoutes(e *echo.Echo) {

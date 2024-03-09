@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v4"
+	jwt "github.com/golang-jwt/jwt/v5"
 	model "github.com/rirachii/golivechat/model"
 )
 
@@ -57,36 +57,6 @@ func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*mode
 	return res, nil
 }
 
-const (
-	secretKey = "TODO_change_to_something_better_secret"
-)
-
-type MyJWTClaims struct {
-	ID       string `json:"id" db:"id"`
-	Username string `json:"username" db:"username"`
-	jwt.RegisteredClaims
-}
-
-
-func ValidateJWT(tokenString string) error {
-	claims := &MyJWTClaims{}
-	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(secretKey), nil
-	})
-
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
-
-	// Check if the token is valid
-	if _, ok := token.Claims.(*MyJWTClaims); !ok || !token.Valid {
-		fmt.Println(err)
-		return errors.New("JWT TOKEN NOT VALID")
-	}
-	return nil
-}
-
 func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
@@ -118,4 +88,45 @@ func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.Logi
 
 	LoginRes := model.NewLoginUserRes(ss, u.Username, strconv.Itoa(int(u.ID)))
 	return &LoginRes, nil
+}
+
+const (
+	secretKey = "TODO_change_to_something_better_secret"
+)
+
+type MyJWTClaims struct {
+	ID       string `json:"id" db:"id"`
+	Username string `json:"username" db:"username"`
+	jwt.RegisteredClaims
+}
+
+func ValidateJWT(tokenString string) (*MyJWTClaims, error) {
+	claims := &MyJWTClaims{}
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(secretKey), nil
+		})
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	// Check if the token is valid
+	tokenClaims, ok := token.Claims.(*MyJWTClaims)
+	if !ok || !token.Valid {
+		fmt.Println(err)
+		return nil, errors.New("JWT TOKEN NOT VALID")
+	}
+
+	return tokenClaims, nil
+}
+
+func (claims MyJWTClaims) GetUID() string {
+	return claims.ID
+}
+func (claims MyJWTClaims) GetUsername() string {
+	return claims.Username
 }

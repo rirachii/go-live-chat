@@ -1,10 +1,21 @@
 
-{{ define "user-username"}}
+{{ define "user-username" }}
 
 
-    <span id="user-display-name"> {{ .Username }} </span>
+    <span id="display-name"> Hello, {{ .Username }}! </span>
 
 
 {{ end }}
 
 
+{{ define "user-image" }}
+
+    <img id="image"
+        src="{{ if .ImgExists }}{{ .ImageLink }}{{ else }}/default_images/no_profile.jpg{{ end }}"
+        alt="Profile pic of user"
+        width="50" height="50"
+    >
+
+
+
+{{ end }}

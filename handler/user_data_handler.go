@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
 	echo "github.com/labstack/echo/v4"
 )
@@ -29,4 +30,24 @@ func HandleGetUsername(c echo.Context) error {
 	}
 
 	return c.Render(http.StatusOK, templateID, usernameData)
+}
+
+type userImg struct {
+	ImgExists bool
+	ImgLink   string
+}
+
+func HandleGetUserImage(c echo.Context) error {
+	const (
+		templateID = "user-image"
+	)
+
+	time.Sleep(time.Second * 2)
+
+	imgData := userImg{
+		ImgExists: false,
+	}
+
+	return c.Render(http.StatusOK, templateID, imgData)
+
 }

@@ -1,0 +1,88 @@
+html{
+    overflow-x: hidden;
+}
+
+
+body {
+    background-color: azure;
+    margin: 0;
+    
+    width: 100dvw;
+    height: 100dvh;
+}
+
+
+
+.top-header-bar{
+    display: flex;
+    margin-bottom: auto;
+
+    align-items: center;
+    justify-content: center;
+
+    height: 10%;
+    background-color: #AEEFBD;
+
+    
+}
+
+.top-header-bar-container{
+    display: flex;
+    flex-direction: row;
+    
+    width: 90%;
+    height: 80%;
+
+}
+
+
+.top-header-bar-container #app-logo{
+    display: flex;
+    margin-right: auto;
+    font-weight: bold;
+
+
+    width: 50%;
+
+
+}
+
+#home-link{
+    display: flex;
+
+    font-size: x-large;
+    align-items: center;
+
+    height: 100%;
+
+}
+
+#home-link:link, #home-link:visited, #home-link:hover{
+    text-decoration: none;
+    color: black
+}
+
+
+.top-header-bar-container #user-profile{
+    display: flex;
+    flex-direction: row;
+    margin-left: auto;
+
+    align-items: center;
+    justify-content: end;
+
+    width: 50%;
+
+}
+.top-header-bar-container #user-profile #display-name{
+    margin: 0.5rem;
+}
+
+.top-header-bar-container #user-profile #image{
+    margin: 0.5rem;
+
+    justify-self: right;
+    
+    border-radius: 25px;
+
+}
