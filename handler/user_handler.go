@@ -77,7 +77,8 @@ func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTP
 
 func (h *UserHandler) Logout(c echo.Context) error {
 	c.SetCookie(deadJWTCookie())
-	return c.JSON(http.StatusOK, "Logout successful")
+
+	return nil
 }
 
 // USER ROUTES HANDLER
@@ -87,7 +88,7 @@ func getUserHandler() (*UserHandler, error) {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
 	}
 
-	userRep := service.NewRepository(dbConn.GetDB())
+	userRep := service.NewUserRepository(dbConn.GetDB())
 	userSvc := service.NewService(userRep)
 	userHandler := NewHandler(userSvc)
 	return userHandler, nil
@@ -121,6 +122,8 @@ func HandleUserLogin(c echo.Context) error {
 
 	accessToken := loginRes.GetAccessToken()
 
+	log.Println("acess token: ", accessToken)
+
 	c.SetCookie(newJWTCookie(accessToken))
 	c.Response().Header().Set("HX-Redirect", "/hub")
 
@@ -133,7 +136,8 @@ func HandleUserLogout(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
-	userHandler.Logout(c)
+	_ = userHandler.Logout(c)
+
 	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)
 }

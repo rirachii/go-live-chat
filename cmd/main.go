@@ -13,22 +13,10 @@ import (
 func main() {
 	e := echo.New()
 
-	t := service.NewTemplateRenderer("templates/pages/*.html")
-	e.Renderer = t
-	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-		Root:   "static",
-		Browse: false,
-	}))
+	SetupEchoServer(e)
 
-	e.File("/favicon.ico", "static/public/images/favicon.ico")
-	e.GET("/", redirectToLanding)
-	e.GET("/landing", handler.HandleLanding)
-
-	hub, hubHandler := handler.InitiateHub()
+	_, hubHandler := handler.InitiateHub()
 	InitializeRoutes(e, hubHandler)
-
-	//TODO: instead we should run when user is logged in securly,
-	go hub.Run()
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -37,22 +25,69 @@ func main() {
 	e.Logger.Fatal(e.Start(port))
 }
 
+func SetupEchoServer(e *echo.Echo) {
+
+	// STATIC Routes
+	e.File("/favicon.ico", "static/public/images/favicon.ico")
+	e.GET("/", redirectToLanding)
+	e.GET("/landing", handler.HandleLanding)
+
+	t := service.NewTemplateRenderer("templates/*/*.html")
+	e.Renderer = t
+
+	// MIDDLE WARE, TODO middleware for JWT
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}\n",
+	}))
+
+	e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+		Root:   "static",
+		Browse: false,
+	}))
+
+	// TODO middleware for JWT.
+	// secretKey := "TODO_change_to_something_better_secret"
+	// e.Use(echojwt.WithConfig(echojwt.Config{
+
+	// 	SuccessHandler: func(c echo.Context) {
+	// 		c.Logger().Print("Token found!")
+	// 	},
+	// 	ErrorHandler: func(c echo.Context, err error) error {
+	// 		c.Logger().Print("no token found", c.Cookies())
+	// 		return nil
+	// 	},
+	// 	ContextKey:  "jwt",
+	// 	SigningKey:  []byte(secretKey),
+	// 	TokenLookup: "cookie:jwt",
+	// }))
+
+	// e.Use(middleware.JWT())
+
+}
 
 func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeAPIRoutes(e)
 	InitializeUserAuthRoutes(e)
+	InitializeUserDataRoutes(e)
 	InitializeHubRoutes(e, hubHandler)
 }
 
 func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
-	e.GET("/hub*", handler.HandleHubPage)
-	e.GET("/hub/get-rooms", hubHandler.HandleGetChatrooms)
-	e.POST("/hub/create-room", hubHandler.HandleCreateRoom)
-	e.POST("/hub/join/:roomID", hubHandler.HandleUserJoinRequest)
-	e.GET("/hub/chatroom/:roomID", hubHandler.HandleChatroomPage)
-	e.GET("/hub/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
-	e.GET("/hub/chatroom/:roomID/ws", hubHandler.HandleChatroomConnection)
-	e.GET("/ws/:roomID", service.HandleGetChatroomWebsocket)
+
+	hub := e.Group("/hub")
+
+	hub.GET("*", handler.HandleHubPage)
+	hub.GET("/get-rooms", hubHandler.HandleGetChatrooms)
+	hub.POST("/create-room", hubHandler.HandleCreateRoom)
+	hub.POST("/join/:roomID", hubHandler.HandleUserJoinRequest)
+	hub.GET("/chatroom/:roomID", hubHandler.HandleChatroomPage)
+	hub.GET("/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
+	hub.GET("/chatroom/:roomID/ws", hubHandler.HandleChatroomConnection)
+	hub.GET("/ws/:roomID", handler.HandleGetChatroomWebsocket)
+
+	//TODO: instead we should run when user is logged in securly,
+	// maybe we can allow guests to join rooms but not create rooms
+	go hubHandler.Hub.Run()
 
 }
 
@@ -65,6 +100,13 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 	e.GET("/logout", handler.HandleUserLogout)
 }
 
+func InitializeUserDataRoutes(e *echo.Echo) {
+
+	e.GET("/user/username", handler.HandleGetUsername)
+	e.GET("/user/profile-pic", handler.HandleGetUserProfile)
+
+	e.GET("/user/user-rooms", handler.HandleGetUserRooms)
+}
 
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)

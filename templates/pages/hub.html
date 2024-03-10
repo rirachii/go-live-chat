@@ -8,91 +8,93 @@
 <head>
     <meta charset="utf-8">
 	<title>Chat Hub</title>
-	<link rel="stylesheet" type="text/css" href="/css/main.css">
-    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+
+	<link rel="stylesheet" type="text/css" href="/css/globals.css">
+	<link rel="stylesheet" type="text/css" href="/css/hub.css">
+
+    <script 
+        src="https://unpkg.com/htmx.org@1.9.10" 
+        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
+        crossorigin="anonymous">
+    </script>
+
+    <script src="/js/htmx/json-enc.js"></script>
+    <script src="/js/listenerFunctions.js"></script>
 
 
 </head>
 
-<style>
-    .chatrooms-container{
-        display: grid;
-        grid-gap: 0.5rem;
-    }
 
-    .chatroom-item{
-        padding: 0.5rem;
-        border: 1px solid black;
-    }
-</style>
 
 <body>
-    <h1>
-        Welcome to the chat hub,
-        <span id="user-display-name"></span>
-        !
-    </h1>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            injectDisplayName();
-        });
-    </script>
 
-    <a href="/landing">Back to homepage</a>
-    <button hx-get="/logout" onclick="location.href='/landing'">Logout</button>
-    <br>
+    {{ template "top-header-bar" . }}
+
+
+    <div class="welcome-msg">
+        Find chats near you!
+        <br>
+        Please allow location. We promise to sell your data!
+    </div>
+
+    <hr>    
+
+    <div style="text-align: center;">
+        <form
+            id="room-creation"
+            hx-post="/hub/create-room"
+            hx-ext="json-enc"
+            hx-target=".user-rooms .rooms-container"
+            hx-swap="afterbegin"
+        >
+            <label for="room-name">Create a room here: </label>
+            <input type="text" 
+                name="room-name" 
+                placeholder="Room Title" 
+                required
+                minlength="4"
+                maxlength="20"
+            >
+
+            <button type="submit"> Create room! </button>
+
+        </form>
+    </div>
 
     
-    <label for="change-display-name">Change your display name here!</label>
-    <input type="text" id="change-display-name" name="change-display-name">
-    <button onclick="setDisplayName(document.getElementById('change-display-name').value)"> Change </button>
+    <div class="hub-chatrooms">
+        <h4> Public Events Near you!</h4>
 
-
-    <form
-        id="room-creation"
-        hx-post="/hub/create-room"
-        hx-vals='js:{"display-name": getDisplayName()}'
-        hx-include="this"
-        hx-ext="json-enc"
-        hx-target=".chatrooms-container"
-        hx-swap="afterbegin"
-    >
-        <label for="room-name">Create a room here: </label>
-        <input type="text" name="room-name" placeholder="Ur mom's room" required>
-
-        <button type="submit"> Create room! </button>
-
-    </form>
-
-    <h2> Join a room! </h2>
-
-    <div class="chatrooms">
         <button type="button"
             hx-get="/hub/get-rooms"
             hx-trigger="load, click"
-            hx-target=".chatrooms-container"
+            hx-target="next .rooms-container"
             hx-swap="innerHTML"
         >
             Refresh Rooms
         </button>
 
-        <div 
-        class="chatrooms-container">
-        </div>
+        <br>
 
+        <div
+            class="rooms-container">
+        </div>
 
     </div>
 
 
+    <div class="user-rooms">
+        <h4> Your Rooms </h4>
+        
 
-    <script src="/js/htmx/json-enc.js"></script>
-    <script src="/js/localStorage.js"></script>
-    <script src="/js/listenerFunctions.js"></script>
+        <!-- TODO get user's rooms -->
+        <div class="rooms-container"
 
-    <!-- <script>
-        document.addEventListener("htmx:beforeRequest", formInjectDisplayName(event));
+        >
+        </div>
 
-    </script> -->
+    </div>
+
 
 
 </body>
@@ -107,31 +109,36 @@
 {{ define "hub-chatrooms"}}
 
     {{ range .Rooms }}
-        
-        <div 
-            class="chatroom-item"
-        >
-            "{{ .RoomName }}" Chatroom 
 
-            <form 
-                id="join-room"
-                style="display: inline;"
-                hx-post="/hub/join/{{ .RoomID }}"
-                hx-vals='js:{"display-name": getDisplayName()}'
-                hx-include="this"
-                hx-ext="json-enc"
-                hx-swap="none"    
-            >
-                <input type="hidden" name="room-id" value="{{ .RoomID }}">
-    
-                <button type="submit">
-                    Join
-                </button>
-            </form>
-
-
-        </div>
+        {{ template "hub-chatroom-item" .Chatroom }}
 
     {{ end }}
 
-{{end}}
+
+{{ end }}
+
+
+{{ define "hub-chatroom-item" }}
+
+
+    <div 
+        class="chatroom-item"
+        hx-trigger="click"
+        hx-post="/hub/join/{{ .RoomID }}"
+        hx-ext="json-enc"
+        hx-include="this"
+
+
+        
+    >
+        <div id="chatroom-name">
+            {{ .RoomName }}
+
+        </div>
+
+        <input type="hidden" name="room-id" value="{{ .RoomID }}">
+
+
+    </div>
+
+{{ end }}

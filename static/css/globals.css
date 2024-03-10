@@ -1,0 +1,144 @@
+html{
+    overflow-x: hidden;
+}
+
+
+body {
+    background-color: azure;
+    margin: 0;
+    
+    width: 100lvw;
+    height: 100lvh;
+}
+
+
+
+.top-header-bar{
+    display: flex;
+    margin-bottom: auto;
+
+    align-items: center;
+    justify-content: center;
+
+    height: 7.5lvh;
+    background-color: #AEEFBD;
+
+    
+}
+
+.top-header-bar-container{
+    display: flex;
+    flex-direction: row;
+    
+    width: 90%;
+    height: 80%;
+
+}
+
+
+.top-header-bar-container #app-logo{
+    display: flex;
+    margin-right: auto;
+    font-weight: bold;
+
+
+
+
+}
+
+#home-link{
+    display: flex;
+
+    font-size: x-large;
+    align-items: center;
+
+    height: 100%;
+
+}
+
+#home-link:link, #home-link:visited, #home-link:hover{
+    text-decoration: none;
+    color: black
+}
+
+
+.top-header-bar-container #user-profile{
+    display: flex;
+    flex-direction: row;
+    margin-left: auto;
+
+    align-items: center;
+    justify-content: end;
+
+
+}
+.top-header-bar-container #user-profile #welcome-user{
+    margin: 0.5rem;
+}
+
+
+.profile-dropdown #profile-pic-btn{
+    background: none;
+    border: none;
+    border-radius: 100px;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.profile-dropdown #profile-image{
+    margin: 0.5rem;
+
+    justify-self: right;
+    
+    border-radius: inherit;
+
+}
+
+.profile-dropdown{
+    position: relative;
+}
+
+.profile-dropdown .profile-options{
+
+    display: none;
+    
+    position: absolute;
+    left: -50%;
+    top: calc(100% - .25rem);
+
+    background-color: white;
+    padding: .75rem;
+    border-radius: .25rem;
+    box-shadow: 0 2px 5px 0 rgba(0,0,0,0.5);
+
+
+    
+}
+
+@media ( hover: hover ){
+    /* devices with hover */
+    .profile-dropdown:hover .profile-options{
+        display: block;
+    }
+}
+
+@media ( hover: none ) {
+    /* devices with no hover */
+    .profile-dropdown:active .profile-options{
+        display: block;
+    }
+    
+}
+
+
+.profile-options > a{
+
+    display: block;
+    color: black;
+
+    text-decoration: none;
+    
+
+}
+

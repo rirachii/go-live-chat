@@ -2,7 +2,7 @@ package handler
 
 type CreateRoomRequest struct {
 	// TODO: user id or accesstoken instead of user display name
-	UserID   string `json:"display-name"`
+	UserID   string
 	RoomName string `json:"room-name"`
 }
 

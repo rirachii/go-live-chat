@@ -1,0 +1,41 @@
+{{ define "top-header-bar" }}
+
+    <header class="top-header-bar">
+
+        <div class="top-header-bar-container">
+
+            <div id="app-logo">
+                <a id="home-link" href="/hub"> GoChat </a>
+
+            </div>
+
+
+            <div id="user-profile">
+
+                <span id="welcome-user"
+                    hx-get="/user/username"
+                    hx-trigger="load"
+                    hx-swap="outerHTML"
+                ></span>
+
+
+                <div id="profile-dropdown"
+                    hx-get="/user/profile-pic"
+                    hx-trigger="load"
+                    hx-swap="innerHTML"
+                >
+
+                    <img id="spinner" class="htmx-indicator" src="/svg-loaders/rings.svg"/>
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </header>
+
+{{ end }}

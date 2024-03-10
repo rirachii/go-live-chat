@@ -1,0 +1,62 @@
+package handler
+
+import (
+	"net/http"
+	"time"
+
+	echo "github.com/labstack/echo/v4"
+)
+
+func HandleGetUsername(c echo.Context) error {
+
+	c.Logger().Print("get username")
+
+	const (
+		templateID    = "user-username"
+		usernameField = "Username"
+	)
+
+	// assume failure
+	usernameData := map[string]string{
+		usernameField: "Guest",
+	}
+
+	jwt, jwtError := getJWTCookie(c)
+	if jwtError != nil {
+		// do nothing
+	} else {
+		username := jwt.GetUsername()
+		usernameData[usernameField] = username
+	}
+
+	return c.Render(http.StatusOK, templateID, usernameData)
+}
+
+type userImg struct {
+	ImgExists bool
+	ImgLink   string
+}
+
+func HandleGetUserProfile(c echo.Context) error {
+	const (
+		templateID = "user-profile"
+		imgDataID  = "UserImg"
+	)
+
+	time.Sleep(time.Second * 0)
+
+	imgData := userImg{
+		ImgExists: false,
+	}
+
+	templateData := map[string]userImg{
+		imgDataID: imgData,
+	}
+
+	return c.Render(http.StatusOK, templateID, templateData)
+
+}
+
+func HandleGetUserRooms(c echo.Context) error {
+	return c.NoContent(http.StatusNotImplemented)
+}

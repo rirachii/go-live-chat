@@ -10,16 +10,18 @@ import (
 func HandleLanding(c echo.Context) error {
 	landingTemplate := "landing"
 
+	// jwt, ok := c.Get("jwt").(*jwt.Token)
+	// c.Logger().Print(c.Cookies())
+
 	data := make(map[string]string)
 	data["Title"] = "LIVE CHAT SERVERRR!"
 
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
 
-
 func HandleRegisterPage(c echo.Context) error {
 	template := "register"
-	err := checkCookie(c)
+	_, err := getJWTCookie(c)
 	if err == nil {
 		return c.Redirect(http.StatusSeeOther, "/hub")
 	}
@@ -29,7 +31,7 @@ func HandleRegisterPage(c echo.Context) error {
 
 func HandleLoginPage(c echo.Context) error {
 	template := "login"
-	err := checkCookie(c)
+	_, err := getJWTCookie(c)
 	if err == nil {
 		return c.Redirect(http.StatusSeeOther, "/hub")
 	}
@@ -38,29 +40,29 @@ func HandleLoginPage(c echo.Context) error {
 }
 
 func HandleHubPage(c echo.Context) error {
-	err := checkCookie(c)
+	_, err := getJWTCookie(c)
 	if err != nil {
 		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
 	hubTemplate := "hub"
 	return c.Render(http.StatusOK, hubTemplate, nil)
-	
+
 }
 
+func getJWTCookie(c echo.Context) (*service.MyJWTClaims, error) {
 
-func checkCookie(c echo.Context) error {
 	cookie, err := c.Cookie("jwt")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tokenString := cookie.Value
-	err = service.ValidateJWT(tokenString) 
-	if err != nil {
-		echo.New().Logger.Print(err)
-		return err
+	validTokenClaims, validateErr := service.ValidateJWT(tokenString)
+	if validateErr != nil {
+		echo.New().Logger.Print(validateErr)
+		return nil, validateErr
 	}
-	return nil
-}
 
+	return validTokenClaims, nil
+}
