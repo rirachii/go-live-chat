@@ -1,6 +1,6 @@
 {{ define "top-header-bar" }}
 
-    <div class="top-header-bar">
+    <header class="top-header-bar">
 
         <div class="top-header-bar-container">
 
@@ -12,14 +12,14 @@
 
             <div id="user-profile">
 
-                <span id="display-name"
+                <span id="welcome-user"
                     hx-get="/user/username"
                     hx-trigger="load"
                     hx-swap="outerHTML"
                 ></span>
 
 
-                <div id="image"
+                <div id="profile-dropdown"
                     hx-get="/user/profile-pic"
                     hx-trigger="load"
                     hx-swap="innerHTML"
@@ -36,6 +36,6 @@
         </div>
 
 
-    </div>
+    </header>
 
 {{ end }}

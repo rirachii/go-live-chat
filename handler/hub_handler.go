@@ -35,19 +35,25 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 	const (
 		chatroomsTemplateID = "hub-chatrooms"
 		roomsLoopID         = "Rooms"
+		singleChatroomID    = "Chatroom"
 	)
 
-	chatroomsData := map[string][]model.ChatroomData{}
+	chatroomsData := map[string][]model.ChatroomTemplate{}
 
 	chatrooms := handler.Hub.ChatRooms
 	for roomID, room := range chatrooms {
 		roomName := room.GetName()
+
 		roomData := model.ChatroomData{
-			RoomName: roomName,
 			RoomID:   roomID,
+			RoomName: roomName,
 		}
 
-		chatroomsData[roomsLoopID] = append(chatroomsData[roomsLoopID], roomData)
+		templateData := model.ChatroomTemplate{
+			Chatroom: roomData,
+		}
+
+		chatroomsData[roomsLoopID] = append(chatroomsData[roomsLoopID], templateData)
 	}
 
 	return c.Render(http.StatusOK, chatroomsTemplateID, &chatroomsData)
@@ -57,17 +63,25 @@ func (handler *HubHandler) HandleGetChatrooms(c echo.Context) error {
 // HTMX endpoint
 func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 
+	jwtClaims, err := getJWTCookie(c)
+	if err != nil {
+		c.Response().Header().Set("HX-Redirect", "/login")
+		return c.NoContent(http.StatusUnauthorized)
+	}
+
+	userID := jwtClaims.GetUID()
+
 	var newRoomRequest CreateRoomRequest
-	err := c.Bind(&newRoomRequest)
+	err = c.Bind(&newRoomRequest)
 	if err != nil {
 		return c.NoContent(http.StatusBadRequest)
 	}
+	newRoomRequest.UserID = userID
 
 	// TODO check if room already exists
 	echo.New().Logger.Debugf("Create room request received with data: %i", newRoomRequest)
 
 	// IDs for template
-
 	var (
 		// TODO
 		uid  model.UserID = model.UserID(newRoomRequest.UserID)
@@ -90,11 +104,13 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 		roomsLoopID         = "Rooms"
 	)
 	// one room
-	chatroomsData := map[string][]model.ChatroomData{
+	chatroomsData := map[string][]model.ChatroomTemplate{
 		roomsLoopID: {
-			model.ChatroomData{
-				RoomID:   rid,
-				RoomName: name,
+			model.ChatroomTemplate{
+				Chatroom: model.ChatroomData{
+					RoomID:   rid,
+					RoomName: name,
+				},
 			},
 		},
 	}

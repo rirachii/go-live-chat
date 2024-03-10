@@ -2,20 +2,40 @@
 {{ define "user-username" }}
 
 
-    <span id="display-name"> Hello, {{ .Username }}! </span>
+    <span id="welcome-user"> Hello, {{ .Username }}! </span>
 
 
 {{ end }}
 
+{{ define "user-img"}}
 
-{{ define "user-image" }}
+    <img id="profile-image"
+    src="{{ if .ImgExists }}{{ .ImageLink }}{{ else }}/default_images/no_profile.jpg{{ end }}"
+    alt="Profile pic of user"
+    width="50" height="50"
 
-    <img id="image"
-        src="{{ if .ImgExists }}{{ .ImageLink }}{{ else }}/default_images/no_profile.jpg{{ end }}"
-        alt="Profile pic of user"
-        width="50" height="50"
     >
+{{ end }}
 
+{{ define "user-profile" }}
+
+    <div class="profile-dropdown">
+
+        <button id="profile-pic-btn">
+            
+            {{ template "user-img" .UserImg }}
+    
+        </button>
+
+        <div class="profile-options" hx-boost="true">
+            <a href="/user/profile"> My Profile </a>
+            <a href="/user/settings"> Settings </a>
+            <a href="/logout"> Logout </a>
+        </div>
+
+
+
+    </div>
 
 
 {{ end }}

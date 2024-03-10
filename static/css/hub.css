@@ -1,9 +1,91 @@
-.chatrooms-container{
+
+.welcome-msg{
+    display: block;
+
+
+    margin: 0.25rem auto 0.25rem auto;
+
+    text-align: center;
+
+    font-size: small;
+
+    width: 95lvw;
+}
+
+hr {
+
+    background-color: black;
+    border-radius: 100px;
+    
+    width: 95lvw;
+}
+
+.hub-chatrooms{
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+}
+
+.user-rooms{
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+}
+
+.rooms-container{
     display: grid;
+    
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
+
+
+    border: 1px solid black;
+    border-radius: 2px;;
+
+
+    padding: 0.5rem;
     grid-gap: 0.5rem;
+
+    /* padding + gap + content */
+    width: calc( (5rem * 3) + (1rem * 3) );
+    height: calc( (3rem * 2) + (1rem * 2) );
+
+    overflow: scroll;
+
 }
 
 .chatroom-item{
-    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+
     border: 1px solid black;
+    background-color: #F49AF1;
+
+    width: 5rem;
+    height: 3rem;
+
+    cursor: pointer;
+}
+
+.chatroom-item #chatroom-name{
+
+    text-justify: center;
+    text-align: center;
+    font-size: small;
+    font-weight: bold;
+
+    
+    word-wrap: break-word;
+    word-break: break-all;
+    white-space: normal;
+    hyphens: auto;
 }

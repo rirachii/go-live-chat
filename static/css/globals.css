@@ -7,8 +7,8 @@ body {
     background-color: azure;
     margin: 0;
     
-    width: 100dvw;
-    height: 100dvh;
+    width: 100lvw;
+    height: 100lvh;
 }
 
 
@@ -20,7 +20,7 @@ body {
     align-items: center;
     justify-content: center;
 
-    height: 10%;
+    height: 7.5lvh;
     background-color: #AEEFBD;
 
     
@@ -42,7 +42,6 @@ body {
     font-weight: bold;
 
 
-    width: 50%;
 
 
 }
@@ -71,18 +70,75 @@ body {
     align-items: center;
     justify-content: end;
 
-    width: 50%;
 
 }
-.top-header-bar-container #user-profile #display-name{
+.top-header-bar-container #user-profile #welcome-user{
     margin: 0.5rem;
 }
 
-.top-header-bar-container #user-profile #image{
+
+.profile-dropdown #profile-pic-btn{
+    background: none;
+    border: none;
+    border-radius: 100px;
+    text-decoration: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+.profile-dropdown #profile-image{
     margin: 0.5rem;
 
     justify-self: right;
     
-    border-radius: 25px;
+    border-radius: inherit;
 
 }
+
+.profile-dropdown{
+    position: relative;
+}
+
+.profile-dropdown .profile-options{
+
+    display: none;
+    
+    position: absolute;
+    left: -50%;
+    top: calc(100% - .25rem);
+
+    background-color: white;
+    padding: .75rem;
+    border-radius: .25rem;
+    box-shadow: 0 2px 5px 0 rgba(0,0,0,0.5);
+
+
+    
+}
+
+@media ( hover: hover ){
+    /* devices with hover */
+    .profile-dropdown:hover .profile-options{
+        display: block;
+    }
+}
+
+@media ( hover: none ) {
+    /* devices with no hover */
+    .profile-dropdown:active .profile-options{
+        display: block;
+    }
+    
+}
+
+
+.profile-options > a{
+
+    display: block;
+    color: black;
+
+    text-decoration: none;
+    
+
+}
+

@@ -103,7 +103,9 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 func InitializeUserDataRoutes(e *echo.Echo) {
 
 	e.GET("/user/username", handler.HandleGetUsername)
-	e.GET("/user/profile-pic", handler.HandleGetUserImage)
+	e.GET("/user/profile-pic", handler.HandleGetUserProfile)
+
+	e.GET("/user/user-rooms", handler.HandleGetUserRooms)
 }
 
 func InitializeAPIRoutes(e *echo.Echo) {

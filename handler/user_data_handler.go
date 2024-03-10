@@ -37,17 +37,26 @@ type userImg struct {
 	ImgLink   string
 }
 
-func HandleGetUserImage(c echo.Context) error {
+func HandleGetUserProfile(c echo.Context) error {
 	const (
-		templateID = "user-image"
+		templateID = "user-profile"
+		imgDataID  = "UserImg"
 	)
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 0)
 
 	imgData := userImg{
 		ImgExists: false,
 	}
 
-	return c.Render(http.StatusOK, templateID, imgData)
+	templateData := map[string]userImg{
+		imgDataID: imgData,
+	}
 
+	return c.Render(http.StatusOK, templateID, templateData)
+
+}
+
+func HandleGetUserRooms(c echo.Context) error {
+	return c.NoContent(http.StatusNotImplemented)
 }

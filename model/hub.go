@@ -18,6 +18,10 @@ type UserRequest struct {
 type UserID string
 type RoomID string
 
+type ChatroomTemplate struct {
+	Chatroom ChatroomData
+}
+
 type ChatroomData struct {
 	RoomID   RoomID
 	RoomName string
@@ -26,7 +30,6 @@ type ChatroomData struct {
 type UserSetOfChatrooms struct {
 	ChatroomsSet map[RoomID]bool
 }
-
 
 type SetOfChatrooms struct {
 	Chatrooms map[RoomID]bool
@@ -99,7 +102,6 @@ func (hub *ChatroomsHub) registerUser(userReq *UserRequest) {
 	echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
 	echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
 }
-
 
 func (hub *ChatroomsHub) unRegisterUser(userReq *UserRequest) {
 

@@ -77,7 +77,8 @@ func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTP
 
 func (h *UserHandler) Logout(c echo.Context) error {
 	c.SetCookie(deadJWTCookie())
-	return c.JSON(http.StatusOK, "Logout successful")
+
+	return nil
 }
 
 // USER ROUTES HANDLER
@@ -135,7 +136,8 @@ func HandleUserLogout(c echo.Context) error {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
-	userHandler.Logout(c)
+	_ = userHandler.Logout(c)
+
 	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)
 }
