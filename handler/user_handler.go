@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
-	model "github.com/rirachii/golivechat/model"
+	user "github.com/rirachii/golivechat/model/user"
 	service "github.com/rirachii/golivechat/service"
 	db "github.com/rirachii/golivechat/service/db"
 )
@@ -21,9 +21,9 @@ func NewHandler(s service.UserService) *UserHandler {
 	}
 }
 
-func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
+func (h *UserHandler) CreateUser(c echo.Context) (*user.CreateUserRes, *echo.HTTPError) {
 
-	var createUserReq model.CreateUserReq
+	var createUserReq user.CreateUserReq
 	err := c.Bind(&createUserReq)
 	if err != nil {
 		errorText := fmt.Sprintf("Bad request: %s", err.Error())
@@ -53,9 +53,9 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 
 }
 
-func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError) {
+func (h *UserHandler) LoginUser(c echo.Context) (*user.LoginUserRes, *echo.HTTPError) {
 
-	var loginReq model.LoginUserReq
+	var loginReq user.LoginUserReq
 	bindErr := c.Bind(&loginReq)
 	if bindErr != nil {
 		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())

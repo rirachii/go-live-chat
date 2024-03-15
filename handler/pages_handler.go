@@ -5,38 +5,45 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	"github.com/rirachii/golivechat/service"
+
+	hub_template "github.com/rirachii/golivechat/templates/hub"
+	landing_template "github.com/rirachii/golivechat/templates/landing"
+	login_template "github.com/rirachii/golivechat/templates/login"
+	register_template "github.com/rirachii/golivechat/templates/register"
 )
 
 func HandleLanding(c echo.Context) error {
-	landingTemplate := "landing"
 
 	// jwt, ok := c.Get("jwt").(*jwt.Token)
 	// c.Logger().Print(c.Cookies())
 
-	data := make(map[string]string)
-	data["Title"] = "LIVE CHAT SERVERRR!"
+	data := landing_template.TemplateLandingPage{
+		Title: "LIVE CHAT SERVERRR!",
+	}
 
+	landingTemplate := landing_template.LandingPage.TemplateName
 	return c.Render(http.StatusOK, landingTemplate, data)
 }
 
 func HandleRegisterPage(c echo.Context) error {
-	template := "register"
+
 	_, err := getJWTCookie(c)
 	if err == nil {
 		return c.Redirect(http.StatusSeeOther, "/hub")
 	}
 
-	return c.Render(http.StatusOK, template, nil)
+	registerTemplate := register_template.RegisterPage.TemplateName
+	return c.Render(http.StatusOK, registerTemplate, nil)
 }
 
 func HandleLoginPage(c echo.Context) error {
-	template := "login"
 	_, err := getJWTCookie(c)
 	if err == nil {
 		return c.Redirect(http.StatusSeeOther, "/hub")
 	}
 
-	return c.Render(http.StatusOK, template, nil)
+	loginTemplate := login_template.LoginPage.TemplateName
+	return c.Render(http.StatusOK, loginTemplate, nil)
 }
 
 func HandleHubPage(c echo.Context) error {
@@ -45,7 +52,7 @@ func HandleHubPage(c echo.Context) error {
 		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 
-	hubTemplate := "hub"
+	hubTemplate := hub_template.HubPage.TemplateName
 	return c.Render(http.StatusOK, hubTemplate, nil)
 
 }
