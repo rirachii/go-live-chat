@@ -8,12 +8,12 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	model "github.com/rirachii/golivechat/model"
+	user "github.com/rirachii/golivechat/model/user"
 )
 
 type UserService interface {
-	CreateUser(c context.Context, req *model.CreateUserReq) (*model.CreateUserRes, error)
-	Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error)
+	CreateUser(c context.Context, req *user.CreateUserReq) (*user.CreateUserRes, error)
+	Login(c context.Context, req *user.LoginUserReq) (*user.LoginUserRes, error)
 }
 
 type service struct {
@@ -28,7 +28,7 @@ func NewService(repository UserRepository) UserService {
 	}
 }
 
-func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*model.CreateUserRes, error) {
+func (s *service) CreateUser(c context.Context, req *user.CreateUserReq) (*user.CreateUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -37,7 +37,7 @@ func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*mode
 		return nil, err
 	}
 
-	u := &model.User{
+	u := &user.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashPassword,
@@ -48,7 +48,7 @@ func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*mode
 		return nil, err
 	}
 
-	res := &model.CreateUserRes{
+	res := &user.CreateUserRes{
 		ID:       strconv.Itoa(int(r.ID)),
 		Username: r.Username,
 		Email:    r.Email,
@@ -57,18 +57,18 @@ func (s *service) CreateUser(c context.Context, req *model.CreateUserReq) (*mode
 	return res, nil
 }
 
-func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.LoginUserRes, error) {
+func (s *service) Login(c context.Context, req *user.LoginUserReq) (*user.LoginUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
 	u, err := s.UserRepository.GetUserByEmail(ctx, req.Email)
 	if err != nil {
-		return &model.LoginUserRes{}, err
+		return nil, err
 	}
 
 	err = CheckPassword(req.Password, u.Password)
 	if err != nil {
-		return &model.LoginUserRes{}, err
+		return nil, err
 	}
 
 	//generate jwt golang package
@@ -83,10 +83,10 @@ func (s *service) Login(c context.Context, req *model.LoginUserReq) (*model.Logi
 
 	ss, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return &model.LoginUserRes{}, err
+		return nil, err
 	}
 
-	LoginRes := model.NewLoginUserRes(ss, u.Username, strconv.Itoa(int(u.ID)))
+	LoginRes := user.NewLoginUserRes(ss, u.Username, strconv.Itoa(int(u.ID)))
 	return &LoginRes, nil
 }
 

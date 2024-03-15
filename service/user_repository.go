@@ -2,73 +2,91 @@ package service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"log"
 
-	model "github.com/rirachii/golivechat/model"
+	pgx "github.com/jackc/pgx/v5"
+	user "github.com/rirachii/golivechat/model/user"
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
-	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
-	GetUserByID(ctx context.Context, email string) (*model.User, error)
-}
-
-// flexibility can pass in transaction instead of db object
-// uses sql.DB methods/interfaces
-
-type DBTX interface {
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	CreateUser(ctx context.Context, user *user.User) (*user.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*user.User, error)
+	GetUserByID(ctx context.Context, email string) (*user.User, error)
 }
 
 type userRepository struct {
-	db DBTX
+	db *pgx.Conn
 }
 
-func NewUserRepository(db DBTX) UserRepository {
+func NewUserRepository(db *pgx.Conn) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (r *userRepository) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
+func (r *userRepository) CreateUser(ctx context.Context, user *user.User) (*user.User, error) {
 	var lastInsertId int
-	query := "INSERT INTO users(username, password, email) VALUES ($1, $2, $3) returning id"
-	err := r.db.QueryRowContext(ctx, query, user.Username, user.Password, user.Email).Scan(&lastInsertId)
+
+	// query := "INSERT INTO users(username, password, email) VALUES ($1, $2, $3) returning id"
+
+	const (
+		cmd   = "INSERT INTO %s VALUES %s RETURNING id"
+		table = "users"
+		data  = "(($1, $2, $3)::UserAccount)"
+	)
+
+	query := fmt.Sprintf(cmd, table, data)
+	err := r.db.QueryRow(
+		ctx,
+		query,
+		user.Email,
+		user.Username,
+		user.Password,
+	).Scan(&lastInsertId)
 	if err != nil {
-		return &model.User{}, err
+		return nil, err
 	}
 
 	user.ID = int64(lastInsertId)
 	return user, nil
 }
 
-func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	u := model.User{}
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	u := user.User{}
 
-	query := "SELECT id, email, username, password FROM users WHERE email = $1"
-	err := r.db.QueryRowContext(ctx, query, email).
-		Scan(&u.ID, &u.Email, &u.Username, &u.Password)
+	// query := "SELECT id, email, username, password FROM users WHERE email = $1"
+
+	const (
+		cmd   = "SELECT %s FROM %s WHERE %s"
+		table = "users"
+		data  = "id, (user_data).email, (user_data).username, (user_data).hashed_password"
+		cond  = "(user_data).email = $1"
+	)
+
+	query := fmt.Sprintf(cmd, data, table, cond)
+	row := r.db.QueryRow(ctx, query, email)
+
+	err := row.Scan(&u.ID, &u.Email, &u.Username, &u.Password)
 
 	if err != nil {
-		return &model.User{}, nil
+		log.Println(err)
+		return nil, err
 	}
-	fmt.Print(u.Username)
+
+	fmt.Printf("%+v", u)
 
 	return &u, nil
 }
 
-func (r *userRepository) GetUserByID(ctx context.Context, userID string) (*model.User, error) {
+func (r *userRepository) GetUserByID(ctx context.Context, userID string) (*user.User, error) {
 
-	u := model.User{}
+	u := user.User{}
 
 	query := "SELECT id, email, username, password FROM users WHERE id = $1"
-	err := r.db.QueryRowContext(ctx, query, userID).
+	err := r.db.QueryRow(ctx, query, userID).
 		Scan(&u.ID, &u.Email, &u.Username, &u.Password)
 
 	if err != nil {
-		return &model.User{}, nil
+		return nil, err
 	}
 	fmt.Print(u.Username)
 

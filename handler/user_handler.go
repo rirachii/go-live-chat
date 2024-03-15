@@ -88,7 +88,7 @@ func getUserHandler() (*UserHandler, error) {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
 	}
 
-	userRep := service.NewUserRepository(dbConn.GetDB())
+	userRep := service.NewUserRepository(dbConn.DB())
 	userSvc := service.NewService(userRep)
 	userHandler := NewHandler(userSvc)
 	return userHandler, nil
