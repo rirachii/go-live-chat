@@ -29,12 +29,13 @@ func (r *userRepository) CreateUser(ctx context.Context, user *user.User) (*user
 	// query := "INSERT INTO users(username, password, email) VALUES ($1, $2, $3) returning id"
 
 	const (
-		cmd   = "INSERT INTO %s VALUES %s RETURNING id"
-		table = "users"
-		data  = "(($1, $2, $3)::UserAccount)"
+		cmd          = "INSERT INTO %s %s VALUES %s RETURNING id"
+		table        = "users"
+		table_fields = "(user_acc)"
+		data         = "(($1, $2, $3)::USER_ACCOUNT)"
 	)
 
-	query := fmt.Sprintf(cmd, table, data)
+	query := fmt.Sprintf(cmd, table, table_fields, data)
 	err := r.db.QueryRow(
 		ctx,
 		query,
@@ -58,8 +59,8 @@ func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (*use
 	const (
 		cmd   = "SELECT %s FROM %s WHERE %s"
 		table = "users"
-		data  = "id, (user_data).email, (user_data).username, (user_data).hashed_password"
-		cond  = "(user_data).email = $1"
+		data  = "id, (user_acc).email, (user_acc).username, (user_acc).hashed_password"
+		cond  = "(user_acc).email = $1"
 	)
 
 	query := fmt.Sprintf(cmd, data, table, cond)

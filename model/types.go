@@ -15,3 +15,16 @@ func RID(rid string) RoomID {
 func UID(uid string) UserID {
 	return UserID(uid)
 }
+
+
+type ChatroomInfo struct {
+	RoomID    RoomID
+	RoomName  string
+	RoomOwner UserID
+}
+
+type Message struct {
+	RoomID  RoomID
+	From    UserID
+	Content string
+}

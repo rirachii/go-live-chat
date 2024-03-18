@@ -21,6 +21,19 @@ func NewHandler(s service.UserService) *UserHandler {
 	}
 }
 
+// USER ROUTES HANDLER
+func getUserHandler() (*UserHandler, error) {
+	dbConn, err := db.ConnectDatabase()
+	if err != nil {
+		log.Fatalf("Could not initialize postgres db connection: %s", err)
+	}
+
+	userRep := service.NewUserRepository(dbConn.DB())
+	userSvc := service.NewUserService(userRep)
+	userHandler := NewHandler(userSvc)
+	return userHandler, nil
+}
+
 func (h *UserHandler) CreateUser(c echo.Context) (*user.CreateUserRes, *echo.HTTPError) {
 
 	var createUserReq user.CreateUserReq
@@ -81,18 +94,6 @@ func (h *UserHandler) Logout(c echo.Context) error {
 	return nil
 }
 
-// USER ROUTES HANDLER
-func getUserHandler() (*UserHandler, error) {
-	dbConn, err := db.ConnectDatabase()
-	if err != nil {
-		log.Fatalf("Could not initialize postgres db connection: %s", err)
-	}
-
-	userRep := service.NewUserRepository(dbConn.DB())
-	userSvc := service.NewService(userRep)
-	userHandler := NewHandler(userSvc)
-	return userHandler, nil
-}
 
 func HandleUserRegister(c echo.Context) error {
 	userHandler, err := getUserHandler()

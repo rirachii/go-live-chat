@@ -1,8 +1,13 @@
 package chat_model
 
-
 type MessageRequest struct {
-	RoomID      string `json:"room-id"`
-	UserID      string `json:"user-id"`
+	JWT         string `json:"user-id"`
 	UserMessage string `json:"chat-message"`
+	RoomID      string `json:"room-id"`
+}
+
+// for web socket connection
+type ConnectionRequest struct {
+	JWT    string
+	RoomID string `param:"roomID"`
 }

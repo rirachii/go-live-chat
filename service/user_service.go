@@ -2,12 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"strconv"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/rirachii/golivechat/model"
 	user "github.com/rirachii/golivechat/model/user"
 )
 
@@ -16,19 +15,25 @@ type UserService interface {
 	Login(c context.Context, req *user.LoginUserReq) (*user.LoginUserRes, error)
 }
 
-type service struct {
+type userService struct {
 	UserRepository UserRepository
 	timeout        time.Duration
 }
 
-func NewService(repository UserRepository) UserService {
-	return &service{
+
+func NewUserService(repository UserRepository) UserService {
+	return &userService{
 		repository,
 		time.Duration(2) * time.Second,
 	}
 }
 
-func (s *service) CreateUser(c context.Context, req *user.CreateUserReq) (*user.CreateUserRes, error) {
+const (
+	secretKey = "TODO_change_to_something_better_secret"
+)
+
+
+func (s *userService) CreateUser(c context.Context, req *user.CreateUserReq) (*user.CreateUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -57,7 +62,7 @@ func (s *service) CreateUser(c context.Context, req *user.CreateUserReq) (*user.
 	return res, nil
 }
 
-func (s *service) Login(c context.Context, req *user.LoginUserReq) (*user.LoginUserRes, error) {
+func (s *userService) Login(c context.Context, req *user.LoginUserReq) (*user.LoginUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)
 	defer cancel()
 
@@ -72,7 +77,7 @@ func (s *service) Login(c context.Context, req *user.LoginUserReq) (*user.LoginU
 	}
 
 	//generate jwt golang package
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, MyJWTClaims{
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, model.JWTClaims{
 		ID:       strconv.Itoa(int(u.ID)),
 		Username: u.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -88,45 +93,4 @@ func (s *service) Login(c context.Context, req *user.LoginUserReq) (*user.LoginU
 
 	LoginRes := user.NewLoginUserRes(ss, u.Username, strconv.Itoa(int(u.ID)))
 	return &LoginRes, nil
-}
-
-const (
-	secretKey = "TODO_change_to_something_better_secret"
-)
-
-type MyJWTClaims struct {
-	ID       string `json:"id" db:"id"`
-	Username string `json:"username" db:"username"`
-	jwt.RegisteredClaims
-}
-
-func ValidateJWT(tokenString string) (*MyJWTClaims, error) {
-	claims := &MyJWTClaims{}
-	token, err := jwt.ParseWithClaims(
-		tokenString,
-		claims,
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(secretKey), nil
-		})
-
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-
-	// Check if the token is valid
-	tokenClaims, ok := token.Claims.(*MyJWTClaims)
-	if !ok || !token.Valid {
-		fmt.Println(err)
-		return nil, errors.New("JWT TOKEN NOT VALID")
-	}
-
-	return tokenClaims, nil
-}
-
-func (claims MyJWTClaims) GetUID() string {
-	return claims.ID
-}
-func (claims MyJWTClaims) GetUsername() string {
-	return claims.Username
 }

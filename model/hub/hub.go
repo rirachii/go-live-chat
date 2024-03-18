@@ -8,25 +8,12 @@ import (
 )
 
 type ChatroomsHub struct {
-	chatrooms       map[model.RoomID]*chat.Chatroom
-	userChatrooms   map[model.UserID]UserSetOfChatrooms // userid -> their chatrooms (room ids)
 	registerQueue   chan *model.UserRequest
 	unregisterQueue chan *model.UserRequest
 }
 
-// goes into db
-type UserSetOfChatrooms struct {
-	ChatroomsSet map[model.RoomID]bool
-}
-
-type SetOfChatrooms struct {
-	Chatrooms map[model.RoomID]bool
-}
-
 func NewChatroomsHub() *ChatroomsHub {
 	hub := &ChatroomsHub{
-		chatrooms:       make(map[model.RoomID]*chat.Chatroom),
-		userChatrooms:   make(map[model.UserID]UserSetOfChatrooms),
 		registerQueue:   make(chan *model.UserRequest),
 		unregisterQueue: make(chan *model.UserRequest),
 	}
@@ -65,8 +52,9 @@ func (hub *ChatroomsHub) Unregister(userRequest *model.UserRequest) {
 
 func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *chat.Chatroom) error {
 
-	roomID := newChatRoom.ID()
-	hub.chatrooms[roomID] = newChatRoom
+	// TODO add to DB
+	// roomID := newChatRoom.ID()
+	// hub.chatrooms[roomID] = newChatRoom
 	go newChatRoom.Open()
 
 	// TODO check errors
@@ -74,47 +62,40 @@ func (hub *ChatroomsHub) AddandOpenRoom(newChatRoom *chat.Chatroom) error {
 }
 
 func (hub ChatroomsHub) Chatroom(roomID model.RoomID) *chat.Chatroom {
-	chatroom, ok := hub.chatrooms[roomID]
-	if !ok {
-		return nil
-	}
-	return chatroom
+	// chatroom, ok := hub.chatrooms[roomID]
+	// if !ok {
+	// 	return nil
+	// }
+	return nil
 }
 
 func (hub ChatroomsHub) Chatrooms() map[model.RoomID]*chat.Chatroom {
-	return hub.chatrooms
+	return nil
 }
 
-func (rooms *UserSetOfChatrooms) RegisterRoom(roomID model.RoomID) {
-	// TODO be aware does not check if the room is already registered to them
-	rooms.ChatroomsSet[roomID] = true
-}
-func (rooms *UserSetOfChatrooms) UnregisterRoom(roomID model.RoomID) {
-	// TODO does not check for errors
-	delete(rooms.ChatroomsSet, roomID)
-}
+
 
 func (hub *ChatroomsHub) registerUser(userReq *model.UserRequest) {
 
-	var (
-		userID = userReq.UserID
-		roomID = userReq.RoomID
-	)
+	// var (
+	// 	userID = userReq.UserID
+	// 	roomID = userReq.RoomID
+	// )
 
 	// TODO use DB
-	userChatrooms, ok := hub.userChatrooms[userID]
-	if !ok {
-		hub.userChatrooms[userID] = UserSetOfChatrooms{
-			ChatroomsSet: make(map[model.RoomID]bool),
-		}
-		userChatrooms = hub.userChatrooms[userID]
-		// log.Printf("user [%s] not found", clientID)
-	}
+	// userChatrooms, ok := hub.userChatrooms[userID]
+	// if !ok {
+	// 	hub.userChatrooms[userID] = UserSetOfChatrooms{
+	// 		ChatroomsSet: make(map[model.RoomID]bool),
+	// 	}
+	// 	userChatrooms = hub.userChatrooms[userID]
+	// 	// log.Printf("user [%s] not found", clientID)
+	// }
 
-	userChatrooms.RegisterRoom(roomID)
+	// userChatrooms.RegisterRoom(roomID)
 
-	echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
-	echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
+	// echo.New().Logger.Debugf("Registering %s to room %s", userID, roomID)
+	// echo.New().Logger.Debugf("User [%s] rooms: %i", userID, userChatrooms)
 }
 
 func (hub *ChatroomsHub) unregisterUser(userReq *model.UserRequest) {

@@ -17,8 +17,8 @@ import (
 )
 
 type Chatroom struct {
-	info     ChatroomInfo
-	chatLogs []*Message
+	info     model.ChatroomInfo
+	chatLogs []*model.Message
 	// ClientConnections map[*websocket.Conn]*ClientInfo
 	// AllClients	      []*ClientInfo
 	activeUsers map[model.UserID]*ChatroomUser
@@ -26,19 +26,7 @@ type Chatroom struct {
 	// TODO change to private fields and make function to add to queues
 	joinQueue      chan *ChatroomClient
 	leaveQueue     chan *ChatroomClient
-	broadcastQueue chan *Message
-}
-
-type ChatroomInfo struct {
-	RoomID    model.RoomID
-	RoomName  string
-	RoomOwner model.UserID
-}
-
-type Message struct {
-	RoomID  model.RoomID
-	From    model.UserID
-	Content string
+	broadcastQueue chan *model.Message
 }
 
 func NewChatroom(userReq model.UserRequest, roomName string) *Chatroom {
@@ -48,7 +36,7 @@ func NewChatroom(userReq model.UserRequest, roomName string) *Chatroom {
 		uid = userReq.UserID
 	)
 
-	chatroomInfo := ChatroomInfo{
+	chatroomInfo := model.ChatroomInfo{
 		RoomID:    rid,
 		RoomName:  roomName,
 		RoomOwner: uid,
@@ -56,30 +44,30 @@ func NewChatroom(userReq model.UserRequest, roomName string) *Chatroom {
 
 	newRoom := &Chatroom{
 		info:     chatroomInfo,
-		chatLogs: []*Message{},
+		chatLogs: []*model.Message{},
 		// ClientConnections: make(map[*websocket.Conn]*ClientInfo),
 		// AllClients:        []*ClientInfo{},
 		activeUsers:    make(map[model.UserID]*ChatroomUser),
 		joinQueue:      make(chan *ChatroomClient),
 		leaveQueue:     make(chan *ChatroomClient),
-		broadcastQueue: make(chan *Message),
+		broadcastQueue: make(chan *model.Message),
 	}
 
 	return newRoom
 }
 
-func (room Chatroom) Info() ChatroomInfo   { return room.info }
-func (room Chatroom) ID() model.RoomID     { return room.info.RoomID }
-func (room Chatroom) Name() string         { return room.info.RoomName }
-func (room Chatroom) ChatLogs() []*Message { return room.chatLogs }
+func (room Chatroom) Info() model.ChatroomInfo   { return room.info }
+func (room Chatroom) ID() model.RoomID           { return room.info.RoomID }
+func (room Chatroom) Name() string               { return room.info.RoomName }
+func (room Chatroom) ChatLogs() []*model.Message { return room.chatLogs }
 
 func (room *Chatroom) ActiveUsers() map[model.UserID]*ChatroomUser  { return room.activeUsers }
 func (room *Chatroom) AddUser(uid model.UserID, user *ChatroomUser) { room.activeUsers[uid] = user }
 func (room *Chatroom) RemoveUser(uid model.UserID)                  { delete(room.activeUsers, uid) }
 
-func (room *Chatroom) EnqueueJoin(client *ChatroomClient)       { room.joinQueue <- client }
-func (room *Chatroom) EnqueueLeave(client *ChatroomClient)      { room.joinQueue <- client }
-func (room *Chatroom) EnqueueMessageBroadcast(message *Message) { room.broadcastQueue <- message }
+func (room *Chatroom) EnqueueJoin(client *ChatroomClient)             { room.joinQueue <- client }
+func (room *Chatroom) EnqueueLeave(client *ChatroomClient)            { room.joinQueue <- client }
+func (room *Chatroom) EnqueueMessageBroadcast(message *model.Message) { room.broadcastQueue <- message }
 
 //Chatroom Functions - maybe create an interface for them?
 //Open(), RenderChatroomPage(), HandleNewMessage(), HandleNewMessage(), HandleChatroomLogs()
@@ -142,7 +130,7 @@ func (room *Chatroom) Open() {
 	}
 
 }
-func (room *Chatroom) logMessage(msg *Message) {
+func (room *Chatroom) logMessage(msg *model.Message) {
 	room.chatLogs = append(room.chatLogs, msg)
 }
 
@@ -189,9 +177,14 @@ func (room *Chatroom) clientListenWS(client *ChatroomClient) {
 			room.EnqueueLeave(client)
 			return
 		}
-		newMessage := &Message{
+
+		userJWT, err := model.ValidateJWT(messageReceived.JWT)
+		if err != nil {
+			continue
+		}
+		newMessage := &model.Message{
 			RoomID:  model.RID(messageReceived.RoomID),
-			From:    model.UID(messageReceived.UserID),
+			From:    model.UID(userJWT.GetUID()),
 			Content: messageReceived.UserMessage,
 		}
 
@@ -203,7 +196,7 @@ func (room *Chatroom) clientListenWS(client *ChatroomClient) {
 	}
 }
 
-func (room *Chatroom) sendMessageToUser(user *ChatroomUser, msg *Message) {
+func (room *Chatroom) sendMessageToUser(user *ChatroomUser, msg *model.Message) {
 	// TODO tell room when an error occurs
 	log.Println("attempting to write to every user's ws")
 

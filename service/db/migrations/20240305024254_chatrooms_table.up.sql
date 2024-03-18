@@ -1,4 +1,4 @@
-CREATE TYPE Message AS (
+CREATE TYPE CHAT_MESSAGE AS (
     sender_id BIGINT,
     username VARCHAR,
     msg TEXT
@@ -6,10 +6,11 @@ CREATE TYPE Message AS (
 
 CREATE TABLE chatrooms (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR NOT NULL,
+    room_name VARCHAR NOT NULL,
     owner_id BIGINT NOT NULL,
-    FOREIGN KEY (owner_id) REFERENCES users (id),
-    admins UserAccount[],
-    location JSON,
-    logs Message[]
+        FOREIGN KEY (owner_id) REFERENCES users (id),
+    is_public BOOLEAN,
+    is_active BOOLEAN,
+    logs CHAT_MESSAGE[]
+    -- location JSON
 );

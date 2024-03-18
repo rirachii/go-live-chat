@@ -1,30 +1,42 @@
-package handler
+package hub_model
+
+import (
+	model "github.com/rirachii/golivechat/model"
+)
 
 type CreateRoomRequest struct {
-	// TODO: user id or accesstoken instead of user display name
-	UserID   string
+	UserID   model.UserID
 	RoomName string `json:"room-name"`
+	IsPublic bool
+	IsActive bool
+}
+
+
+type GetChatroomsRequest struct {
+	UserID   model.UserID
+	IsPublic bool
+	IsActive bool
+}
+
+
+type GetRoomRequest struct {
+	UserID model.UserID
 }
 
 type JoinRoomRequest struct {
 	// TODO user ID instaed of user display name
-	UserID string `json:"display-name"`
+	UserID model.UserID
 	RoomID string `json:"room-id"`
 }
 
 type LeaveRoomRequest struct {
 	// TODO user ID instaed of user display name
-	UserID string `json:"display-name"`
+	UserID model.UserID
 	RoomID string `json:"room-id"`
-}
-
-type ConnectionRequest struct {
-	UserID string `query:"userID"`
-	RoomID string `param:"roomID"`
 }
 
 // TODO add user token
 type RoomRequest struct {
-	UserID string `query:"userID" json:"display-name"`
+	UserID string
 	RoomID string `param:"roomID" json:"room-id"`
 }

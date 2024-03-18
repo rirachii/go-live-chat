@@ -13,7 +13,7 @@ type Database struct {
 	db *pgx.Conn
 }
 
-// uses pq driver
+// uses pgx driver
 func ConnectDatabase() (*Database, error) {
 
 	const (

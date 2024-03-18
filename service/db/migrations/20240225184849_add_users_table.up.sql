@@ -1,4 +1,4 @@
-CREATE TYPE UserAccount as (
+CREATE TYPE USER_ACCOUNT as (
     email VARCHAR,
     username VARCHAR,
     hashed_password VARCHAR
@@ -6,12 +6,8 @@ CREATE TYPE UserAccount as (
 
 CREATE TABLE users (
     id BIGSERIAL PRIMARY KEY,
-    user_acc UserAccount
+    user_acc USER_ACCOUNT
 );
-
-
-
-
 
 
 

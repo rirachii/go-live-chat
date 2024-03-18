@@ -10,7 +10,7 @@ type ChatroomUser struct {
 	uid          model.UserID
 	rid          model.RoomID
 	role         string
-	messageQueue chan *Message
+	messageQueue chan *model.Message
 }
 
 type ChatroomClient struct {
@@ -30,7 +30,7 @@ func NewChatroomUser(
 		uid:          userID,
 		rid:          roomID,
 		role:         userRole,
-		messageQueue: make(chan *Message),
+		messageQueue: make(chan *model.Message),
 	}
 
 	return chatroomUser
@@ -48,7 +48,7 @@ func (user ChatroomUser) Role() string {
 	return user.role
 }
 
-func (user *ChatroomUser) PendingMessages() chan *Message {
+func (user *ChatroomUser) PendingMessages() chan *model.Message {
 	return user.messageQueue
 }
 
