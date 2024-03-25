@@ -121,6 +121,7 @@ func getRandomMsg(c echo.Context) error {
 }
 
 func redirectToLanding(c echo.Context) error {
+
 	return c.Redirect(http.StatusPermanentRedirect, "/landing")
 
 }

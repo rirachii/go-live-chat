@@ -39,7 +39,6 @@
         class="chat-room" 
         hx-trigger="load"
         hx-get="/hub/ws/{{ .RoomID }}"
-        hx-vals='js:{"userID": getDisplayName()}'
         hx-target="this"
         hx-swap="outerHTML"
     >
@@ -110,13 +109,10 @@
         </div>
 
         
-
-
         <form 
             id="text-box" 
             ws-send
             hx-include="this"
-            hx-vals='js:{"user-id": getDisplayName()}'
             hx-ext="json-enc"
             hx-swap="afterbegin"
         >
@@ -127,8 +123,6 @@
         </form>
 
     </div>
-
-
 
 
 {{ end }}

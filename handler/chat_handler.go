@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
+	model "github.com/rirachii/golivechat/model"
+	chat_template "github.com/rirachii/golivechat/templates/chat"
 )
 
 func HandleGetChatroomWebsocket(c echo.Context) error {
@@ -15,13 +17,14 @@ func HandleGetChatroomWebsocket(c echo.Context) error {
 		roomID = c.Param("roomID")
 	)
 
-	roomData := map[string]string{
-		// TODO change userID to be token
-		"ConnectionRoute": fmt.Sprintf("/hub/chatroom/%s/ws?userID=%s", roomID, userID),
-		"RoomID":          roomID,
+	route := fmt.Sprintf("/hub/chatroom/%s/ws?userID=%s", roomID, userID)
+
+	connectionData := chat_template.TemplateChatroomConnection{
+		ConnectionRoute: route,
+		RoomID:          model.RID(roomID),
 	}
 
-	const chatroomConnectionTemplateID = "chatroom-connection"
-	return c.Render(http.StatusOK, chatroomConnectionTemplateID, roomData)
+	connectionTemplate := chat_template.ChatroomConnection.TemplateName
+	return c.Render(http.StatusOK, connectionTemplate, connectionData)
 
 }

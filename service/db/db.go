@@ -1,16 +1,34 @@
 package db
 
 import (
+	"context"
 	"database/sql"
-	_ "github.com/lib/pq"
+	"fmt"
+
+	// _ "github.com/lib/pq"
+	pgx "github.com/jackc/pgx/v5"
 )
 
 type Database struct {
-	db *sql.DB
+	db *pgx.Conn
 }
 
+// uses pgx driver
 func ConnectDatabase() (*Database, error) {
-	db, err := sql.Open("postgres", "postgresql://root:password@localhost:5432/go-chat?sslmode=disable")
+
+	const (
+		driver   = "pgx"
+		username = "root"
+		password = "password"
+		host     = "localhost:5432"
+		options  = "sslmode=disable"
+	)
+	var DB_URL = fmt.Sprintf(
+		"postgres://%s:%s@%s/go-chat?%s",
+		username, password, host, options,
+	)
+
+	db, err := pgx.Connect(context.Background(), DB_URL)
 	if err != nil {
 		return nil, err
 	}
@@ -18,10 +36,20 @@ func ConnectDatabase() (*Database, error) {
 	return &Database{db: db}, nil
 }
 
-func (d *Database) Close() {
-	d.db.Close()
+func (d *Database) Close(ctx context.Context) {
+	d.db.Close(ctx)
 }
 
-func (d *Database) GetDB() *sql.DB {
+func (d *Database) DB() *pgx.Conn {
 	return d.db
+}
+
+type SQL_DBTX interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+}
+
+type PGX_DBTX interface {
 }
