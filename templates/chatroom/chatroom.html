@@ -25,7 +25,7 @@
     </h2>
 
     <br>
-    <a href="/hub">back to hub</a>
+    <a href="/hub">Back To Hub</a>
     <br>
 
     <button
@@ -38,8 +38,7 @@
     <div 
         class="chat-room" 
         hx-trigger="load"
-        hx-get="/hub/ws/{{ .RoomID }}"
-        hx-vals='js:{"userID": getDisplayName()}'
+        hx-get="/chatroom/{{ .RoomID }}/get-ws"
         hx-target="this"
         hx-swap="outerHTML"
     >
@@ -89,13 +88,13 @@
     <div
         class="chat-room"
         hx-ext="ws"
-        ws-connect="{{ .ConnectionRoute }}"
+        ws-connect="/chatroom/{{ .RoomID }}/ws"
     >
 
         <div
             id="chat-history"
             hx-trigger="load"
-            hx-get="/hub/chatroom/{{ .RoomID }}/chat-history"
+            hx-get="/chatroom/{{ .RoomID }}/chat-history"
             hx-target="this"
             hx-swap="outerHTML"
         >
@@ -110,15 +109,12 @@
         </div>
 
         
-
-
         <form 
             id="text-box" 
-            ws-send
             hx-include="this"
-            hx-vals='js:{"user-id": getDisplayName()}'
             hx-ext="json-enc"
             hx-swap="afterbegin"
+            ws-send
         >
             <input type="text" hidden name="room-id" value="{{ .RoomID }}">
             <input type="text" name="chat-message" placeholder="Message here!">
@@ -127,8 +123,6 @@
         </form>
 
     </div>
-
-
 
 
 {{ end }}

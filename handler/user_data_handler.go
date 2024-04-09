@@ -21,11 +21,11 @@ func HandleGetUsername(c echo.Context) error {
 		usernameField: "Guest",
 	}
 
-	jwt, jwtError := getJWTCookie(c)
+	jwtClaims, jwtError := GetJWTClaims(c)
 	if jwtError != nil {
 		// do nothing
 	} else {
-		username := jwt.GetUsername()
+		username := jwtClaims.GetUsername()
 		usernameData[usernameField] = username
 	}
 

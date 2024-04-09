@@ -1,6 +1,15 @@
-CREATE TABLE "users" (
-    "id" bigserial PRIMARY KEY,
-    "username" varchar NOT NULL,
-    "email" varchar NOT NULL,
-    "password" varchar NOT NULL
-)
+CREATE TYPE USER_ACCOUNT as (
+    email VARCHAR,
+    username VARCHAR,
+    hashed_password VARCHAR
+);
+
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    user_acc USER_ACCOUNT
+);
+
+
+
+
+

@@ -1,10 +1,10 @@
-package model
+package user_model
 
 type User struct {
 	ID       int64  `json:"id" db:"id"`
-	Email    string `json:"email" db:"email"`
-	Username string `json:"username" db:"username"`
-	Password string `json:"password" db:"password"`
+	Email    string `json:"email" db:"(user_data).email"`
+	Username string `json:"username" db:"(user_data).username"`
+	Password string `json:"password" db:"(user_data).password"`
 }
 
 type CreateUserReq struct {

@@ -6,24 +6,37 @@ import (
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
-	model "github.com/rirachii/golivechat/model"
-	service "github.com/rirachii/golivechat/service"
+	user "github.com/rirachii/golivechat/model/user"
+	userService "github.com/rirachii/golivechat/service/user"
 	db "github.com/rirachii/golivechat/service/db"
 )
 
 type UserHandler struct {
-	UserService service.UserService
+	UserService userService.UserService
 }
 
-func NewHandler(s service.UserService) *UserHandler {
+func NewHandler(s userService.UserService) *UserHandler {
 	return &UserHandler{
 		UserService: s,
 	}
 }
 
-func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HTTPError) {
+// USER ROUTES HANDLER
+func getUserHandler() (*UserHandler, error) {
+	dbConn, err := db.ConnectDatabase()
+	if err != nil {
+		log.Fatalf("Could not initialize postgres db connection: %s", err)
+	}
 
-	var createUserReq model.CreateUserReq
+	userRep := userService.NewUserRepository(dbConn.DB())
+	userSvc := userService.NewUserService(userRep)
+	userHandler := NewHandler(userSvc)
+	return userHandler, nil
+}
+
+func (h *UserHandler) CreateUser(c echo.Context) (*user.CreateUserRes, *echo.HTTPError) {
+
+	var createUserReq user.CreateUserReq
 	err := c.Bind(&createUserReq)
 	if err != nil {
 		errorText := fmt.Sprintf("Bad request: %s", err.Error())
@@ -31,7 +44,7 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 		return nil, err
 	}
 
-	if createUserReq.Email == "" ||
+	if 	createUserReq.Email == "" ||
 		createUserReq.Username == "" ||
 		createUserReq.Password == "" {
 
@@ -53,9 +66,9 @@ func (h *UserHandler) CreateUser(c echo.Context) (*model.CreateUserRes, *echo.HT
 
 }
 
-func (h *UserHandler) LoginUser(c echo.Context) (*model.LoginUserRes, *echo.HTTPError) {
+func (h *UserHandler) LoginUser(c echo.Context) (*user.LoginUserRes, *echo.HTTPError) {
 
-	var loginReq model.LoginUserReq
+	var loginReq user.LoginUserReq
 	bindErr := c.Bind(&loginReq)
 	if bindErr != nil {
 		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())
@@ -81,18 +94,6 @@ func (h *UserHandler) Logout(c echo.Context) error {
 	return nil
 }
 
-// USER ROUTES HANDLER
-func getUserHandler() (*UserHandler, error) {
-	dbConn, err := db.ConnectDatabase()
-	if err != nil {
-		log.Fatalf("Could not initialize postgres db connection: %s", err)
-	}
-
-	userRep := service.NewUserRepository(dbConn.GetDB())
-	userSvc := service.NewService(userRep)
-	userHandler := NewHandler(userSvc)
-	return userHandler, nil
-}
 
 func HandleUserRegister(c echo.Context) error {
 	userHandler, err := getUserHandler()
