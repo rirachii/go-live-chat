@@ -3,15 +3,18 @@ package hub_service
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
+	"github.com/rirachii/golivechat/model"
 	hub_model "github.com/rirachii/golivechat/model/hub"
 )
 
 type HubService interface {
-	CreateRoom(ctx context.Context, req *hub_model.CreateRoomRequest) (ChatroomDTO, error)
-	GetRoom(ctx context.Context, req *hub_model.GetRoomRequest) (ChatroomDTO, error)
-	GetRoomsPublic(ctx context.Context, req *hub_model.GetChatroomsRequest) (ChatroomsDTO, error)
+	CreateRoom(context.Context, hub_model.CreateRoomRequest) (ChatroomDTO, error)
+	// GetRoom(context.Context, hub_model.GetChatroomRequest) (ChatroomDTO, error)
+	GetRoomInfo(context.Context, hub_model.GetChatroomRequest) (ChatroomInfoDTO, error)
+	GetRoomsPublic(context.Context, hub_model.GetPublicChatroomsRequest) ([]ChatroomDTO, error)
 }
 
 type hubService struct {
@@ -31,44 +34,66 @@ func NewHubService(repository HubRepository) HubService {
 
 func (svc *hubService) CreateRoom(
 	ctx context.Context,
-	req *hub_model.CreateRoomRequest,
+	req hub_model.CreateRoomRequest,
 ) (res ChatroomDTO, err error) {
 
 	chatroom, err := svc.Repo().CreateRoom(ctx, req); if err != nil {
 		return ChatroomDTO{}, err
 	}
 
-	res = ChatroomDTO(chatroom)
+	res = ChatroomDTO{
+		RoomID: model.RID(strconv.Itoa(chatroom.RoomID)),
+		RoomName: chatroom.RoomName,
+		
+	}
 
 	return res, nil
 }
 
-func (svc *hubService) GetRoom(
+func (svc *hubService) GetRoomInfo(
 	ctx context.Context,
-	req *hub_model.GetRoomRequest,
-) (res ChatroomDTO, err error) {
+	req hub_model.GetChatroomRequest,
+) (ChatroomInfoDTO, error) {
 
-	return ChatroomDTO{}, nil
+	chatroom, err := svc.Repo().GetRoomByID(ctx, req)
+	if err != nil {
+		return ChatroomInfoDTO{}, err
+	}
+
+	res := ChatroomInfoDTO{
+		RoomID: model.IntToRID(chatroom.RoomID),
+		RoomName: chatroom.RoomName,
+
+	}
+
+	return res, nil
 
 }
 
 func (svc *hubService) GetRoomsPublic(
 	ctx context.Context,
-	req *hub_model.GetChatroomsRequest,
-) (res ChatroomsDTO, err error) {
+	req hub_model.GetPublicChatroomsRequest,
+) ([]ChatroomDTO, error) {
 
-	chatrooms, err := svc.Repo().GetRoomsPublic(ctx)
+	dbChatrooms, err := svc.Repo().GetRoomsPublic(ctx)
 	if err != nil {
 		log.Println("error with repo")
-		return ChatroomsDTO{}, err
+		return []ChatroomDTO{}, err
 	}
 
-	for _, room := range chatrooms {
-		roomDTO := ChatroomDTO(room)
 
-		res.Chatrooms = append(res.Chatrooms, roomDTO)
+	chatrooms := []ChatroomDTO{}
+	for _, room := range dbChatrooms {
+
+		roomDTO := ChatroomDTO{
+			RoomID: model.IntToRID(room.RoomID),
+			RoomName: room.RoomName,
+
+		}
+
+		chatrooms = append(chatrooms, roomDTO)
 
 	}
 
-	return res, nil
+	return chatrooms, nil
 }

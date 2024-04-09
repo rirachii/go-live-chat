@@ -1,7 +1,6 @@
 package templates
 
 import (
-	model "github.com/rirachii/golivechat/model"
 	t "github.com/rirachii/golivechat/templates"
 )
 
@@ -11,18 +10,17 @@ var ChatroomPage = t.TemplateData{
 }
 
 type TemplateChatroomPage struct {
-	RoomID   model.RoomID
+	RoomID   string
 	RoomName string
 }
 
-// chatroom-connection template
+// "chatroom-connection" template
 var ChatroomConnection = t.TemplateData{
 	TemplateName: "chatroom-connection",
 }
 
 type TemplateChatroomConnection struct {
-	ConnectionRoute string
-	RoomID          model.RoomID
+	RoomID string
 }
 
 const WebsocketDivID = "chat-messages"

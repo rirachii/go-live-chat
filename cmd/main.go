@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -15,7 +16,12 @@ func main() {
 
 	SetupEchoServer(e)
 
-	_, hubHandler := handler.InitiateHub()
+	hubHandler, err := handler.InitiateHubHandler()
+	if err != nil {
+		log.Print(err.Error())
+		return 
+	}
+
 	InitializeRoutes(e, hubHandler)
 
 	port := os.Getenv("PORT")
@@ -70,6 +76,7 @@ func InitializeRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	InitializeUserAuthRoutes(e)
 	InitializeUserDataRoutes(e)
 	InitializeHubRoutes(e, hubHandler)
+	InitializeChatroomRoutes(e, hubHandler)
 }
 
 func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
@@ -77,18 +84,28 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	hub := e.Group("/hub")
 
 	hub.GET("*", handler.HandleHubPage)
-	hub.GET("/get-rooms", hubHandler.HandleGetChatrooms)
 	hub.POST("/create-room", hubHandler.HandleCreateRoom)
-	hub.POST("/join/:roomID", hubHandler.HandleUserJoinRequest)
-	hub.GET("/chatroom/:roomID", hubHandler.HandleChatroomPage)
-	hub.GET("/chatroom/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
-	hub.GET("/chatroom/:roomID/ws", hubHandler.HandleChatroomConnection)
-	hub.GET("/ws/:roomID", handler.HandleGetChatroomWebsocket)
+	hub.GET("/get-public-rooms", hubHandler.HandleGetPublicChatrooms)
+	hub.POST("/join-room/:roomID", hubHandler.HandleUserJoinRequest)
+
 
 	//TODO: instead we should run when user is logged in securly,
 	// maybe we can allow guests to join rooms but not create rooms
-	go hubHandler.Hub.Run()
 
+}
+
+func InitializeChatroomRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
+
+	chatroom := e.Group("/chatroom")
+
+	chatroom.GET("/:roomID", hubHandler.HandleChatroomPage)
+	chatroom.GET("/:roomID/chat-history", hubHandler.HandleFetchChatroomHistory)
+
+	// websocket connection
+	chatroom.GET("/:roomID/ws", hubHandler.HandleChatroomConnection)
+
+	// gets html for websocket
+	chatroom.GET("/:roomID/get-ws", handler.HandleGetChatroomWebsocket)
 }
 
 func InitializeUserAuthRoutes(e *echo.Echo) {
@@ -102,11 +119,13 @@ func InitializeUserAuthRoutes(e *echo.Echo) {
 
 func InitializeUserDataRoutes(e *echo.Echo) {
 
-	e.GET("/user/username", handler.HandleGetUsername)
-	e.GET("/user/profile-pic", handler.HandleGetUserProfile)
+	user := e.Group("/user")
 
-	e.GET("/user/user-rooms", handler.HandleGetUserRooms)
+	user.GET("/username", handler.HandleGetUsername)
+	user.GET("/profile-pic", handler.HandleGetUserProfile)
+	user.GET("/user-rooms", handler.HandleGetUserRooms)
 }
+
 
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)
