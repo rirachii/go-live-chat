@@ -5,8 +5,14 @@ import (
 )
 
 type CreateRoomRequest struct {
-	UserID   model.UserID
 	RoomName string `json:"room-name"`
+	UserID   model.UserID
+	IsPublic bool
+	IsActive bool
+}
+
+
+type GetPublicChatroomsRequest struct {
 	IsPublic bool
 	IsActive bool
 }
@@ -19,8 +25,9 @@ type GetChatroomsRequest struct {
 }
 
 
-type GetRoomRequest struct {
+type GetChatroomRequest struct {
 	UserID model.UserID
+	RoomID model.RoomID
 }
 
 type JoinRoomRequest struct {

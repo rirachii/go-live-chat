@@ -6,7 +6,8 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	"github.com/rirachii/golivechat/model"
+	model "github.com/rirachii/golivechat/model"
+
 	user "github.com/rirachii/golivechat/model/user"
 )
 
@@ -20,7 +21,6 @@ type userService struct {
 	timeout        time.Duration
 }
 
-
 func NewUserService(repository UserRepository) UserService {
 	return &userService{
 		repository,
@@ -31,7 +31,6 @@ func NewUserService(repository UserRepository) UserService {
 const (
 	secretKey = "TODO_change_to_something_better_secret"
 )
-
 
 func (s *userService) CreateUser(c context.Context, req *user.CreateUserReq) (*user.CreateUserRes, error) {
 	ctx, cancel := context.WithTimeout(c, s.timeout)

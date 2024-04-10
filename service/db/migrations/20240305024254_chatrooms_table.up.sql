@@ -1,7 +1,6 @@
 CREATE TYPE CHAT_MESSAGE AS (
     sender_id BIGINT,
-    username VARCHAR,
-    msg TEXT
+    text_message TEXT
 );
 
 CREATE TABLE chatrooms (

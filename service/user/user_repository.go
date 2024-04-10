@@ -13,11 +13,14 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *user.User) (*user.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*user.User, error)
 	GetUserByID(ctx context.Context, email string) (*user.User, error)
+	GetUserDisplayName(ctx context.Context, id int) (displayName string, err error)
 }
 
 type userRepository struct {
 	db *pgx.Conn
 }
+
+func (r *userRepository) DB() *pgx.Conn { return r.db }
 
 func NewUserRepository(db *pgx.Conn) UserRepository {
 	return &userRepository{db: db}
@@ -32,7 +35,7 @@ func (r *userRepository) CreateUser(ctx context.Context, user *user.User) (*user
 		cmd          = "INSERT INTO %s %s VALUES %s RETURNING id"
 		table        = "users"
 		table_fields = "(user_acc)"
-		data         = "(($1, $2, $3)::USER_ACCOUNT)"
+		data         = "(ROW($1, $2, $3)::USER_ACCOUNT)"
 	)
 
 	query := fmt.Sprintf(cmd, table, table_fields, data)
@@ -93,4 +96,16 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID string) (*user.
 
 	return &u, nil
 
+}
+
+func (r *userRepository) GetUserDisplayName(ctx context.Context, id int) (displayName string, err error) {
+	query := `SELECT display_name FROM user_display_names WHERE id = $1`
+
+	err = r.db.QueryRow(ctx, query, id).Scan(&displayName)
+	if err != nil {
+		return "", err
+	}
+	
+
+	return displayName, err
 }

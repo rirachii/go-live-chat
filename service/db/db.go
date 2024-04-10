@@ -28,7 +28,8 @@ func ConnectDatabase() (*Database, error) {
 		username, password, host, options,
 	)
 
-	db, err := pgx.Connect(context.Background(), DB_URL)
+	ctx := context.Background()
+	db, err := pgx.Connect(ctx, DB_URL)
 	if err != nil {
 		return nil, err
 	}

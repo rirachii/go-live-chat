@@ -66,7 +66,7 @@
         <h4> Public Events Near you!</h4>
 
         <button type="button"
-            hx-get="/hub/get-rooms"
+            hx-get="/hub/get-public-rooms"
             hx-trigger="load, click"
             hx-target="next .rooms-container"
             hx-swap="innerHTML"
@@ -124,12 +124,11 @@
     <div 
         class="chatroom-item"
         hx-trigger="click"
-        hx-post="/hub/join/{{ .RoomID }}"
+        hx-post="/hub/join-room/{{ .RoomID }}"
         hx-ext="json-enc"
         hx-include="this"
 
 
-        
     >
         <div id="chatroom-name">
             {{ .RoomName }}

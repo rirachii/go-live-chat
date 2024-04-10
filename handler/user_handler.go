@@ -7,15 +7,15 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	user "github.com/rirachii/golivechat/model/user"
-	service "github.com/rirachii/golivechat/service"
+	userService "github.com/rirachii/golivechat/service/user"
 	db "github.com/rirachii/golivechat/service/db"
 )
 
 type UserHandler struct {
-	UserService service.UserService
+	UserService userService.UserService
 }
 
-func NewHandler(s service.UserService) *UserHandler {
+func NewHandler(s userService.UserService) *UserHandler {
 	return &UserHandler{
 		UserService: s,
 	}
@@ -28,8 +28,8 @@ func getUserHandler() (*UserHandler, error) {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
 	}
 
-	userRep := service.NewUserRepository(dbConn.DB())
-	userSvc := service.NewUserService(userRep)
+	userRep := userService.NewUserRepository(dbConn.DB())
+	userSvc := userService.NewUserService(userRep)
 	userHandler := NewHandler(userSvc)
 	return userHandler, nil
 }
@@ -44,7 +44,7 @@ func (h *UserHandler) CreateUser(c echo.Context) (*user.CreateUserRes, *echo.HTT
 		return nil, err
 	}
 
-	if createUserReq.Email == "" ||
+	if 	createUserReq.Email == "" ||
 		createUserReq.Username == "" ||
 		createUserReq.Password == "" {
 

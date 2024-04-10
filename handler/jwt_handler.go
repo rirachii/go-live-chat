@@ -61,3 +61,15 @@ func GetJWTClaims(c echo.Context) (*model.JWTClaims, error){
 	return claims, nil
 
 }
+
+// calls `GetJWTClaims(c).UserID`
+func GetJWTUserID(c echo.Context) (string, error) {
+
+	claims, err := GetJWTClaims(c)
+	if err != nil {
+		return "", err
+	}
+
+	return claims.GetUID(), nil
+
+}

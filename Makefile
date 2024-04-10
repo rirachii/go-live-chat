@@ -3,6 +3,9 @@ export PORT=:8080
 run:
 	PORT=${PORT} go run cmd/main.go
 
+restartdb:
+	postgresup migratedown migrateup
+
 postgresinit:
 	docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:15-alpine
 
