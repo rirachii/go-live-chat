@@ -12,8 +12,8 @@ import (
 )
 
 type ChatroomService interface {
-	LogMessage(ctx context.Context, req chat_model.SaveUserMessageRequest) (chat_model.ChatMessageDTO, error)
-	LogChatroomMessages(ctx context.Context, req chat_model.SaveChatLogsRequest) error
+	SaveMessage(ctx context.Context, req chat_model.SaveUserMessageRequest) (chat_model.ChatMessageDTO, error)
+	SaveChatroomMessages(ctx context.Context, req chat_model.SaveChatLogsRequest) error
 	GetChatroomMessages(ctx context.Context, req chat_model.GetChatLogsRequest) ([]chat_model.ChatMessageDTO, error)
 }
 
@@ -30,39 +30,6 @@ func NewChatroomService(chatRepo ChatroomRepository) ChatroomService {
 		chatroomRepository: chatRepo,
 		timeout:            time.Duration(2) * time.Second,
 	}
-}
-
-func (svc *chatroomService) LogMessage(
-	ctx context.Context, req chat_model.SaveUserMessageRequest,
-) (chat_model.ChatMessageDTO, error) {
-
-	userID, uidErr := model.UIDToInt(req.UserID)
-	roomID, ridErr := model.RIDToInt(req.RoomID)
-
-	if uidErr != nil || ridErr != nil {
-		return chat_model.ChatMessageDTO{}, errors.New("RoomID or UserID is not a number")
-	}
-
-	userMsg := req.UserMessage
-
-	dbReq := RepoLogMessage{
-		RoomID:   roomID,
-		SenderID: userID,
-		Message:  userMsg,
-	}
-
-	dbRes, dbErr := svc.Repo().LogMessageAndReturn(ctx, dbReq)
-	if dbErr != nil {
-		return chat_model.ChatMessageDTO{}, dbErr
-	}
-
-	data := chat_model.ChatMessageDTO{
-		RoomID:      model.IntToRID(dbReq.RoomID),
-		SenderID:    model.IntToUID(dbRes.SenderID),
-		MessageText: dbRes.MessageText,
-	}
-
-	return data, nil
 }
 
 func (svc *chatroomService) GetChatroomMessages(
@@ -101,7 +68,41 @@ func (svc *chatroomService) GetChatroomMessages(
 	return chatroomMessages, nil
 }
 
-func (svc *chatroomService) LogChatroomMessages(
+func (svc *chatroomService) SaveMessage(
+	ctx context.Context, req chat_model.SaveUserMessageRequest,
+) (chat_model.ChatMessageDTO, error) {
+
+	userID, uidErr := model.UIDToInt(req.UserID)
+	roomID, ridErr := model.RIDToInt(req.RoomID)
+
+	if uidErr != nil || ridErr != nil {
+		return chat_model.ChatMessageDTO{}, errors.New("RoomID or UserID is not a number")
+	}
+
+	userMsg := req.UserMessage
+
+	dbReq := RepoLogMessage{
+		RoomID:   roomID,
+		SenderID: userID,
+		Message:  userMsg,
+	}
+
+	dbRes, dbErr := svc.Repo().LogMessageAndReturn(ctx, dbReq)
+	if dbErr != nil {
+		return chat_model.ChatMessageDTO{}, dbErr
+	}
+
+	data := chat_model.ChatMessageDTO{
+		RoomID:      model.IntToRID(dbReq.RoomID),
+		SenderID:    model.IntToUID(dbRes.SenderID),
+		MessageText: dbRes.MessageText,
+	}
+
+	return data, nil
+}
+
+
+func (svc *chatroomService) SaveChatroomMessages(
 	ctx context.Context, req chat_model.SaveChatLogsRequest,
 ) error {
 

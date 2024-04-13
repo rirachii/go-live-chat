@@ -27,9 +27,15 @@ func NewChatroom(roomInfo model.ChatroomInfo) chat_model.Chatroom {
 		chatLogs:         []model.Message{},
 		lastSavedChatLog: -1,
 		activeUsers:      make(map[model.UserID]*chat_model.ChatroomUser),
-		joinQueue:        make(chan *chat_model.ChatroomClient),
-		leaveQueue:       make(chan *chat_model.ChatroomUser),
-		broadcastQueue:   make(chan model.Message),
+
+		joinQueue:      make(chan *chat_model.ChatroomClient),
+		leaveQueue:     make(chan *chat_model.ChatroomUser),
+		broadcastQueue: make(chan model.Message),
+
+		saveMessagesQueue: make(chan model.Message),
+
+		closeBroadcast: make(chan int),
+		closeSaveQueue: make(chan int),
 	}
 
 	return &newRoom
@@ -44,8 +50,8 @@ const (
 )
 
 type chatroom struct {
-	// status   ChatroomStatus
-	info model.ChatroomInfo
+	status ChatroomStatus
+	info   model.ChatroomInfo
 
 	chatLogs []model.Message
 	// holds the index of the last saved chat message
@@ -56,6 +62,11 @@ type chatroom struct {
 	joinQueue      chan *chat_model.ChatroomClient
 	leaveQueue     chan *chat_model.ChatroomUser
 	broadcastQueue chan model.Message
+
+	saveMessagesQueue chan model.Message
+
+	closeBroadcast chan int
+	closeSaveQueue chan int
 }
 
 func (room chatroom) Info() model.ChatroomInfo  { return room.info }
@@ -75,17 +86,38 @@ func (room *chatroom) EnqueueJoin(client *chat_model.ChatroomClient) { room.join
 func (room *chatroom) EnqueueLeave(user *chat_model.ChatroomUser)    { room.leaveQueue <- user }
 func (room *chatroom) EnqueueMessageBroadcast(message model.Message) { room.broadcastQueue <- message }
 
+func (room *chatroom) StartSaveChatoomMessagesStream() {
+
+	for {
+		select {
+		case msg := <-room.saveMessagesQueue:
+
+			// TODO ctx
+			ctx := context.Background()
+
+			room.SaveMessageToDB(ctx, msg)
+
+		}
+	}
+
+}
+
 func (room *chatroom) Open() {
 
 	// populate self if needed
 
+	room.status = Loading
 	room.populateChatLogsFromDB()
+	room.status = Open
+
+	go room.StartSaveChatoomMessagesStream()
 
 	// TODO close functionality
 	for {
 		select {
 		case client := <-room.joinQueue:
 			// TODO add to this chat
+			// handle client joi
 
 			var (
 				uid      = client.UserID()
@@ -113,7 +145,9 @@ func (room *chatroom) Open() {
 			echo.New().Logger.Printf("new message to broadcast -> %i", message)
 
 			room.LogMessage(message)
-			go room.SaveMessagesToDB()
+			room.EnqueueSaveMessage(message)
+
+			// go room.SaveMessagesToDB()
 
 			for _, user := range room.ActiveUsers() {
 				go room.SendMessageToUser(user, message)
@@ -123,17 +157,44 @@ func (room *chatroom) Open() {
 			// case <-done:
 			//handle deletion of
 		}
+
 	}
 
 }
 
 func (room *chatroom) Close() {
 
+	room.closeBroadcast <- 1
+	room.closeSaveQueue <- 1
+
+
 	// close room. save msgs to db.
 
 }
 
-func (room *chatroom) SaveMessagesToDB() error {
+func (room *chatroom) EnqueueSaveMessage(msg model.Message) { room.saveMessagesQueue <- msg }
+func (room *chatroom) SaveMessageToDB(ctx context.Context, msg model.Message) error {
+
+	chatroomService, svcErr := createChatroomService()
+	if svcErr != nil {
+		return svcErr
+	}
+
+	saveMessageRequest := chat_model.SaveUserMessageRequest{
+		UserID:      msg.SenderUID,
+		RoomID:      msg.RoomID,
+		UserMessage: msg.Content,
+	}
+
+	_, saveErr := chatroomService.SaveMessage(ctx, saveMessageRequest)
+	if saveErr != nil {
+		return saveErr
+	}
+
+	return nil
+}
+
+func (room *chatroom) SaveChatLogsToDB() error {
 
 	lastSavedIndex := room.IndexLastSavedLog()
 
@@ -152,7 +213,6 @@ func (room *chatroom) SaveMessagesToDB() error {
 	for _, msg := range msgsToSave {
 
 		saveMsgRequest := chat_model.SaveUserMessageRequest{
-
 			UserID:      msg.SenderUID,
 			RoomID:      msg.RoomID,
 			UserMessage: msg.Content,
@@ -163,7 +223,7 @@ func (room *chatroom) SaveMessagesToDB() error {
 	}
 
 	ctx := context.TODO()
-	err = chatroomSvc.LogChatroomMessages(ctx, chatroomMessages)
+	err = chatroomSvc.SaveChatroomMessages(ctx, chatroomMessages)
 	if err != nil {
 		return err
 	}
