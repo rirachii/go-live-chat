@@ -14,6 +14,7 @@ const (
 type JWTClaims struct {
 	ID       string `json:"id" db:"id"`
 	Username string `json:"username" db:"username"`
+	DisplayName string `json:"display-name" db:"display_name"` 
 	jwt.RegisteredClaims
 }
 
@@ -47,4 +48,3 @@ func (claims JWTClaims) GetUID() string {
 func (claims JWTClaims) GetUsername() string {
 	return claims.Username
 }
-

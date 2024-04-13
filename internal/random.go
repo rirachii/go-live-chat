@@ -1,4 +1,4 @@
-package service
+package random_api
 
 import "math/rand"
 

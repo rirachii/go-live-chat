@@ -5,6 +5,7 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	model "github.com/rirachii/golivechat/model"
+	user_model "github.com/rirachii/golivechat/model/user"
 )
 
 type JWTCookie struct {
@@ -73,3 +74,20 @@ func GetJWTUserID(c echo.Context) (string, error) {
 	return claims.GetUID(), nil
 
 }
+
+func GetJWTUserInfo(c echo.Context) (user_model.UserInfo, error ) {
+
+	claims, err := GetJWTClaims(c)
+	if err != nil {
+		return user_model.UserInfo{}, err
+	}
+
+	userInfo := user_model.UserInfo{
+		ID: model.UserID(claims.GetUID()),
+		Username: claims.GetUsername(),
+	}
+
+	return userInfo, nil
+
+} 
+

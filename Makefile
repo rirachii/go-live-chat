@@ -4,7 +4,11 @@ run:
 	PORT=${PORT} go run cmd/main.go
 
 restartdb:
-	postgresup migratedown migrateup
+	dropdb 
+	createdb 
+	postgresup  
+	migratedown 
+	migrateup
 
 postgresinit:
 	docker run --name postgres15 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=password -d postgres:15-alpine
@@ -22,9 +26,9 @@ dropdb:
 	docker exec -it postgres15 dropdb go-chat
 
 migrateup:
-	migrate -path service/db/migrations/ -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -verbose up
+	migrate -path db/migrations/ -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path service/db/migrations/ -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -verbose down
+	migrate -path db/migrations/ -database "postgresql://root:password@localhost:5432/go-chat?sslmode=disable" -verbose down
 
 .PHONY: postgresinit postgres createdb dropdb createmigration migrateup migratedown

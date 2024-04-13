@@ -8,10 +8,11 @@ import (
 	log "log"
 
 	echo "github.com/labstack/echo/v4"
+	db "github.com/rirachii/golivechat/db"
+	chat_svc "github.com/rirachii/golivechat/internal/chatroom"
 	model "github.com/rirachii/golivechat/model"
 	chat_model "github.com/rirachii/golivechat/model/chat"
-	chat_svc "github.com/rirachii/golivechat/service/chatroom"
-	db "github.com/rirachii/golivechat/service/db"
+	user_model "github.com/rirachii/golivechat/model/user"
 
 	websocket "nhooyr.io/websocket"
 	wsjson "nhooyr.io/websocket/wsjson"
@@ -25,12 +26,10 @@ func NewChatroom(roomInfo model.ChatroomInfo) chat_model.Chatroom {
 		info:             roomInfo,
 		chatLogs:         []model.Message{},
 		lastSavedChatLog: -1,
-		// ClientConnections: make(map[*websocket.Conn]*ClientInfo),
-		// AllClients:        []*ClientInfo{},
-		activeUsers:    make(map[model.UserID]*chat_model.ChatroomUser),
-		joinQueue:      make(chan *chat_model.ChatroomClient),
-		leaveQueue:     make(chan *chat_model.ChatroomUser),
-		broadcastQueue: make(chan model.Message),
+		activeUsers:      make(map[model.UserID]*chat_model.ChatroomUser),
+		joinQueue:        make(chan *chat_model.ChatroomClient),
+		leaveQueue:       make(chan *chat_model.ChatroomUser),
+		broadcastQueue:   make(chan model.Message),
 	}
 
 	return &newRoom
@@ -51,9 +50,7 @@ type chatroom struct {
 	chatLogs []model.Message
 	// holds the index of the last saved chat message
 	lastSavedChatLog int
-	// ClientConnections map[*websocket.Conn]*ClientInfo
-	// AllClients	      []*ClientInfo
-	activeUsers map[model.UserID]*chat_model.ChatroomUser
+	activeUsers      map[model.UserID]*chat_model.ChatroomUser
 
 	// TODO change to private fields and make function to add to queues
 	joinQueue      chan *chat_model.ChatroomClient
@@ -90,18 +87,17 @@ func (room *chatroom) Open() {
 		case client := <-room.joinQueue:
 			// TODO add to this chat
 
-			// will wait for msg from client, braodcast new msg to room
-
-			// listen to user, not client
-
-			//add user to room LiveUsers
-
 			var (
-				uid = client.UserID()
-				rid = client.RoomID()
+				uid      = client.UserID()
+				username = client.Username()
+				rid      = client.RoomID()
 			)
 
-			user := chat_model.NewChatroomUser(client, uid, rid, "chatter")
+			userInfo := user_model.UserInfo{
+				ID: uid, Username: username,
+			}
+
+			user := chat_model.NewChatroomUser(client, userInfo, rid, "chatter")
 			go room.ListenToUserWS(user)
 
 			room.AddUser(user)
@@ -118,7 +114,6 @@ func (room *chatroom) Open() {
 
 			room.LogMessage(message)
 			go room.SaveMessagesToDB()
-
 
 			for _, user := range room.ActiveUsers() {
 				go room.SendMessageToUser(user, message)
@@ -158,7 +153,7 @@ func (room *chatroom) SaveMessagesToDB() error {
 
 		saveMsgRequest := chat_model.SaveUserMessageRequest{
 
-			UserID:      msg.From,
+			UserID:      msg.SenderUID,
 			RoomID:      msg.RoomID,
 			UserMessage: msg.Content,
 		}
@@ -229,9 +224,10 @@ func (room *chatroom) ListenToUserWS(user *chat_model.ChatroomUser) {
 		}
 
 		newMessage := model.Message{
-			RoomID:  model.RID(messageToSend.RoomID),
-			From:    model.UserID(messageToSend.UserID),
-			Content: messageToSend.MessageText,
+			RoomID:         model.RID(messageToSend.RoomID),
+			SenderUsername: user.Username(),
+			SenderUID:      user.ID(),
+			Content:        messageToSend.MessageText,
 		}
 
 		room.EnqueueMessageBroadcast(newMessage)
@@ -262,7 +258,7 @@ func (room *chatroom) SendMessageToUser(user *chat_model.ChatroomUser, msg model
 	templateData := chatroom_template.PrepareMessage(
 		chatroom_template.WebsocketDivID,
 		false,
-		string(msg.From),
+		msg.SenderUsername,
 		msg.Content,
 	)
 
@@ -298,9 +294,9 @@ func (room *chatroom) populateChatLogsFromDB() error {
 	for _, m := range messages {
 
 		msg := model.Message{
-			RoomID:  m.RoomID,
-			From:    m.SenderID,
-			Content: m.MessageText,
+			RoomID:    m.RoomID,
+			SenderUID: m.SenderID,
+			Content:   m.MessageText,
 		}
 
 		room.LogMessage(msg)

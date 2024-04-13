@@ -8,7 +8,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rirachii/golivechat/handler"
-	"github.com/rirachii/golivechat/service"
+	"github.com/rirachii/golivechat/templates"
+	"github.com/rirachii/golivechat/internal"
+
 )
 
 func main() {
@@ -38,7 +40,7 @@ func SetupEchoServer(e *echo.Echo) {
 	e.GET("/", redirectToLanding)
 	e.GET("/landing", handler.HandleLanding)
 
-	t := service.NewTemplateRenderer("templates/*/*.html")
+	t := templates.NewTemplateRenderer("templates/*/*.html")
 	e.Renderer = t
 
 	// MIDDLE WARE, TODO middleware for JWT
@@ -51,23 +53,6 @@ func SetupEchoServer(e *echo.Echo) {
 		Browse: false,
 	}))
 
-	// TODO middleware for JWT.
-	// secretKey := "TODO_change_to_something_better_secret"
-	// e.Use(echojwt.WithConfig(echojwt.Config{
-
-	// 	SuccessHandler: func(c echo.Context) {
-	// 		c.Logger().Print("Token found!")
-	// 	},
-	// 	ErrorHandler: func(c echo.Context, err error) error {
-	// 		c.Logger().Print("no token found", c.Cookies())
-	// 		return nil
-	// 	},
-	// 	ContextKey:  "jwt",
-	// 	SigningKey:  []byte(secretKey),
-	// 	TokenLookup: "cookie:jwt",
-	// }))
-
-	// e.Use(middleware.JWT())
 
 }
 
@@ -132,7 +117,7 @@ func InitializeAPIRoutes(e *echo.Echo) {
 }
 
 func getRandomMsg(c echo.Context) error {
-	randomMsg := service.RandomMsg()
+	randomMsg := random_api.RandomMsg()
 
 	c.Response().Header().Set("Content-Type", "application/json")
 	return c.JSON(http.StatusOK, randomMsg)
