@@ -1,3 +1,10 @@
+:root{
+    --font-1: 'Rubik';
+    --font-2: 'Red Hat Display';
+    --gochat-green: #AEEFBD;
+    --gochat-pink: #F49AF1;
+}
+
 html{
     overflow-x: hidden;
 }

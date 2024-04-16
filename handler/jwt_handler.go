@@ -3,10 +3,12 @@ package handler
 import (
 	"net/http"
 
+	"os"
 	echo "github.com/labstack/echo/v4"
 	model "github.com/rirachii/golivechat/model"
 	user_model "github.com/rirachii/golivechat/model/user"
 )
+
 
 type JWTCookie struct {
 	cookie *http.Cookie
@@ -46,16 +48,16 @@ func (jwtCookie JWTCookie) Claims() (*model.JWTClaims, error) {
 	return validTokenClaims, nil
 }
 
-
 // calls `GetJWTCookie().Claims()` to centralize error handling
-func GetJWTClaims(c echo.Context) (*model.JWTClaims, error){
+func GetJWTClaims(c echo.Context) (*model.JWTClaims, error) {
 
 	cookie, err := GetJWTCookie(c)
 	if err != nil {
 		return nil, err
 	}
 
-	claims, err := cookie.Claims(); if err != nil {
+	claims, err := cookie.Claims()
+	if err != nil {
 		return nil, err
 	}
 
@@ -75,7 +77,7 @@ func GetJWTUserID(c echo.Context) (string, error) {
 
 }
 
-func GetJWTUserInfo(c echo.Context) (user_model.UserInfo, error ) {
+func GetJWTUserInfo(c echo.Context) (user_model.UserInfo, error) {
 
 	claims, err := GetJWTClaims(c)
 	if err != nil {
@@ -83,11 +85,45 @@ func GetJWTUserInfo(c echo.Context) (user_model.UserInfo, error ) {
 	}
 
 	userInfo := user_model.UserInfo{
-		ID: model.UserID(claims.GetUID()),
+		ID:       model.UserID(claims.GetUID()),
 		Username: claims.GetUsername(),
 	}
 
 	return userInfo, nil
 
-} 
+}
 
+// func Get
+
+func newJWTCookie(jwt string) *http.Cookie {
+
+	domainName := os.Getenv(envDomainName)
+
+	cookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    jwt,
+		MaxAge:   3600,
+		Path:     "/",
+		Domain:   domainName,
+		Secure:   false,
+		HttpOnly: true,
+		SameSite: http.SameSiteDefaultMode,
+	}
+	return cookie
+}
+
+func deadJWTCookie() *http.Cookie {
+
+	domainName := os.Getenv(envDomainName)
+
+	deadCookie := &http.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		MaxAge:   -1,
+		Domain:   domainName,
+		Secure:   false,
+		HttpOnly: true,
+	}
+	
+	return deadCookie
+}

@@ -1,0 +1,41 @@
+{{ define "email-input" }}
+    <div class="input-container">
+        <label for="email">Email:</label>
+
+        <input type="email" 
+            name="email" 
+            placeholder="Enter your email" 
+            minlength="10"
+            required
+        >
+
+    </div>
+{{ end }}
+
+{{ define "password-input" }}
+    <div class="input-container">
+        
+        <label for="password">Password:</label>
+        <input type="password" 
+            name="password" 
+            placeholder="Enter your password" 
+            minlength="8"
+            required
+        >
+
+    </div>
+{{ end }}
+
+{{ define "username-input"}}
+    <div class="input-container">
+        
+        <label for="username">Username:</label>
+        <input type="username" 
+            name="username" 
+            placeholder="Enter your username" 
+            minlength="5"
+            required
+        >
+
+    </div>
+{{ end }}

@@ -7,7 +7,7 @@ import (
 
 	echo "github.com/labstack/echo/v4"
 	db "github.com/rirachii/golivechat/db"
-	userService "github.com/rirachii/golivechat/internal/user"
+	user_service "github.com/rirachii/golivechat/internal/user"
 	user_model "github.com/rirachii/golivechat/model/user"
 )
 
@@ -22,7 +22,7 @@ func HandleUserRegister(c echo.Context) error {
 		return userErr
 	}
 
-	c.Response().Header().Set("HX-Redirect", "/login")
+	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)
 }
 
@@ -60,10 +60,10 @@ func HandleUserLogout(c echo.Context) error {
 
 // handles db requests
 type UserHandler struct {
-	UserService userService.UserService
+	UserService user_service.UserService
 }
 
-func NewHandler(s userService.UserService) *UserHandler {
+func NewHandler(s user_service.UserService) *UserHandler {
 	return &UserHandler{
 		UserService: s,
 	}
@@ -75,8 +75,8 @@ func createUserHandler() (*UserHandler, error) {
 		log.Fatalf("Could not initialize postgres db connection: %s", err)
 	}
 
-	userRep := userService.NewUserRepository(dbConn.DB())
-	userSvc := userService.NewUserService(userRep)
+	userRep := user_service.NewUserRepository(dbConn.DB())
+	userSvc := user_service.NewUserService(userRep)
 	userHandler := NewHandler(userSvc)
 	return userHandler, nil
 }
@@ -137,7 +137,8 @@ func (h *UserHandler) LoginUser(c echo.Context) (user_model.UserLoggedIn, *echo.
 	}
 
 	if loginReq.Email == "" || loginReq.Password == "" {
-		return userLoggedIn, echo.NewHTTPError(http.StatusBadGateway, "A field is empty:", loginReq)
+		loginErr := echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("A field is empty: %+v", loginReq))
+		return userLoggedIn, loginErr
 	}
 
 	ctx := c.Request().Context()
@@ -160,28 +161,3 @@ func (h *UserHandler) Logout(c echo.Context) error {
 	return nil
 }
 
-func newJWTCookie(jwt string) *http.Cookie {
-	cookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    jwt,
-		MaxAge:   3600,
-		Path:     "/",
-		Domain:   "localhost",
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: http.SameSiteDefaultMode,
-	}
-	return cookie
-}
-
-func deadJWTCookie() *http.Cookie {
-	deadCookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		MaxAge:   -1,
-		Domain:   "localhost",
-		Secure:   false,
-		HttpOnly: true,
-	}
-	return deadCookie
-}

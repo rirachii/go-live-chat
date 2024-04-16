@@ -2,6 +2,8 @@ package user_service
 
 import (
 	"context"
+	"errors"
+	"os"
 	"strconv"
 	"time"
 
@@ -28,9 +30,6 @@ func NewUserService(repository UserRepository) UserService {
 	}
 }
 
-const (
-	secretKey = "TODO_change_to_something_better_secret"
-)
 
 func (s *userService) CreateUser(c context.Context, 
 	req user_model.CreateUserRequest,
@@ -89,9 +88,10 @@ func (s *userService) Login(
 		},
 	})
 
+	secretKey := os.Getenv("JWT_SECRET_KEY")
 	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return user_model.LoginUserDTO{}, err
+		return user_model.LoginUserDTO{}, errors.New("failed to sign token")
 	}
 
 	uid :=  model.IntToUID(user.ID)

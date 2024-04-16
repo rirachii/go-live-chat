@@ -9,24 +9,145 @@
     <meta charset="utf-8">
 	<title>Go Live Chat</title>
 
-	<link rel="stylesheet" type="text/css" href="/css/globals.css">
-    <script 
-        src="https://unpkg.com/htmx.org@1.9.10" 
-        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
-        crossorigin="anonymous">
-    </script>
+    {{ template "html-head" . }}
+    {{ template "htmx-json" . }}
+
+	<link rel="stylesheet" type="text/css" href="/css/landing.css">
+
 
 </head>
 
 <body>
-    <h2> {{ .Title }}</h2>
-    <button hx-get="/random-msgs"> Get random </button>
 
 
-    <br>
-    <a href="/login">Login here!</a>
-    <a href="/register">Register here!</a>
+    <div class="landing-container">
 
+        <div id="landing-title">
+            {{ .Title }}
+        </div>
+
+        <img src="/public/images/logo.png" width="100" height="100">
+
+        <div class="user-auth-container"
+            hx-ext="json-enc"
+        >
+
+            <span id="auth-type-title"> <h4> User Login </h4> </span>
+
+            {{ block "user-login-form" . }}
+
+                <form class="user-auth-form"
+                    hx-post="/login"
+                >
+
+                    <div class="user-auth-form-inputs-container">
+
+                        {{ template "email-input" . }}
+                        {{ template "password-input" . }}
+
+
+                        {{ block "auth-options" .}}
+
+                            <div class="auth-options-container">
+
+                                <button 
+                                    type="button"
+                                    id="open-register-modal-btn"
+                                >
+                                    CREATE NEW ACCOUNT
+                                </button>
+
+                                <button id="user-auth-submit-btn" type="submit">
+                                    LOGIN!
+                                </button>
+
+                            </div>
+
+                        {{ end }}
+
+                    </div>
+
+                </form>
+
+
+            {{ end }}
+
+            {{ block "user-register-modal" . }}
+                <dialog class="user-register-modal">
+                    <button type="reset" id="close-register-modal-btn"> 
+                        <img width="50" height="50" src="https://img.icons8.com/ios-filled/50/FA5252/close-window.png" alt="close-window"/>
+                    </button>
+                    <div class="register-form-container"
+                        
+                    >
+                        <span id="auth-type-title"> <h4> Create New Account </h4> </span>
+                        <form class="user-auth-form"
+                            hx-post="/register" 
+                        >
+                            <div class="user-auth-form-inputs-container"
+                                hx-ext="json-enc"
+                            >
+                                {{ template "username-input" . }}
+                                {{ template "email-input" . }}
+                                {{ template "password-input" . }}
+
+                                <div class="auth-options-container">
+
+                                    <button id="user-auth-submit-btn" type="submit">
+                                        CREATE NEW ACCOUNT
+                                    </button>
+    
+                                </div>
+
+                            </div>
+
+                        </form>
+                    </div>
+                    
+                </div>
+            {{ end }}
+
+
+            <br>
+            <button 
+                hidden
+                hx-get="/random-msgs"
+                hx-target=".random-msg-container #random-msg"
+                hx-swap="innerHTML"
+            > 
+                Get random 
+            </button>
+
+            <br>
+
+            <div class="random-msg-container">
+                <span id="random-msg"></span>
+
+            </div>
+        </div>
+        
+    
+    </div>
+
+
+
+    <script>
+
+        const dialog = document.querySelector(".user-register-modal");
+        const showButton = document.querySelector("#open-register-modal-btn");
+        const closeButton = document.querySelector("#close-register-modal-btn");
+
+        // "Show the dialog" button opens the dialog modally
+        showButton.addEventListener("click", () => {
+            dialog.showModal();
+        });
+
+        // "Close" button closes the dialog
+        closeButton.addEventListener("click", () => {
+            dialog.close();
+        });
+
+    </script>
 
 </body>
 
