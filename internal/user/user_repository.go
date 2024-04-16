@@ -11,6 +11,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, userData RepoCreateUser) (dbUserInfo, error)
 	GetUserByEmail(ctx context.Context, email string) (dbUser, error)
 	GetUserByID(ctx context.Context, id int) (dbUser, error)
+	GetUsernameByID(ctx context.Context, id int) (dbUsername, error)
+
 }
 
 type userRepository struct {
@@ -92,4 +94,22 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID int) (dbUser, e
 
 	return res, nil
 
+}
+
+func (r *userRepository) GetUsernameByID(ctx context.Context, id int) (dbUsername, error){
+
+	res := dbUsername{}
+
+	query := `SELECT username 
+				FROM users
+				WHERE id = $1`
+
+	row := r.DB().QueryRow(ctx, query, id)
+	err := row.Scan(&res.Username)
+	if err != nil {
+		return dbUsername{}, err
+	}
+
+	return res, nil
+	
 }

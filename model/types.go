@@ -6,9 +6,9 @@ type UserID string
 type RoomID string
 
 type UserRequest struct {
-	UserID UserID
+	UserID   UserID
 	Username string
-	RoomID RoomID
+	RoomID   RoomID
 }
 
 func UID(uid string) UserID            { return UserID(uid) }
@@ -23,12 +23,12 @@ type ChatroomInfo struct {
 	RoomID    RoomID
 	RoomName  string
 	RoomOwner UserID
-	IsPublic bool
+	IsPublic  bool
 }
 
 type Message struct {
-	RoomID  RoomID	// room id
-	SenderUID UserID // user's id
-	SenderUsername    string // username
-	Content string // content of message
+	RoomID        RoomID // room id
+	SenderUID     UserID // user's id
+	SenderName string // user name
+	Content       string // content of message
 }
