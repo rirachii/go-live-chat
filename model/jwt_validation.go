@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = os.Getenv("JWT_SECRET_KEY")
 
 type JWTClaims struct {
 	ID       string `json:"id" db:"id"`
@@ -17,6 +17,8 @@ type JWTClaims struct {
 }
 
 func ValidateJWT(tokenString string) (*JWTClaims, error) {
+
+	secretKey := os.Getenv("JWT_SECRET_KEY")
 	claims := &JWTClaims{}
 	token, err := jwt.ParseWithClaims(
 		tokenString,
