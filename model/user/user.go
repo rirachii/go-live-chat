@@ -7,6 +7,8 @@ type UserInfo struct {
 	Username string
 }
 
+
+
 type UserCreated struct {
 	Success  bool
 	ID       model.UserID
@@ -20,3 +22,5 @@ type UserLoggedIn struct {
 	Username    string
 	AccessToken string
 }
+
+

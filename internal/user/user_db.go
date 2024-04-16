@@ -10,6 +10,10 @@ type dbUserID struct {
 	ID int `db:"id"`
 }
 
+type dbUsername struct {
+	Username string `db:"username"`
+}
+
 type dbUser struct {
 	ID             int    `db:"id"`
 	Username       string `db:"username"`

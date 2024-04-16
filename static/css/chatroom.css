@@ -1,0 +1,46 @@
+.chat-room{
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    gap: 1rem;
+
+}
+
+#chat-messages{
+    display: flex;
+    flex-direction: column;
+
+    overflow-x: hidden;
+    overflow-y: scroll;
+
+    min-height: 50dvh;
+    max-height: 50dvh;
+
+    width: 80%;
+    border: 1px solid black;
+
+}
+
+#chat-message{
+    display: flex;
+    flex-direction: row;
+
+    overflow-wrap: break-word;
+    max-width: 90%;
+}
+
+#chat-message #user-name{
+    font-weight: 500;
+    font-family: var(--font-1);
+
+}
+
+#chat-message #message{
+    max-width: 100%;
+    overflow-wrap: break-word;
+
+    font-family: var(--font-1);
+}

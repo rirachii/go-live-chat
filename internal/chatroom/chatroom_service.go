@@ -7,27 +7,33 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rirachii/golivechat/model"
+	user_repo "github.com/rirachii/golivechat/internal/user"
+	model "github.com/rirachii/golivechat/model"
 	chat_model "github.com/rirachii/golivechat/model/chat"
+	user_model "github.com/rirachii/golivechat/model/user"
 )
 
 type ChatroomService interface {
 	SaveMessage(ctx context.Context, req chat_model.SaveUserMessageRequest) (chat_model.ChatMessageDTO, error)
 	SaveChatroomMessages(ctx context.Context, req chat_model.SaveChatLogsRequest) error
 	GetChatroomMessages(ctx context.Context, req chat_model.GetChatLogsRequest) ([]chat_model.ChatMessageDTO, error)
+	GetUsernameByID(ctx context.Context, req user_model.GetUsernameByIDRequest) (username string, err error)
 }
 
 type chatroomService struct {
 	chatroomRepository ChatroomRepository
+	userRepository     user_repo.UserRepository
 	timeout            time.Duration
 }
 
-func (svc *chatroomService) Repo() ChatroomRepository       { return svc.chatroomRepository }
-func (svc *chatroomService) TimeoutDuration() time.Duration { return svc.timeout }
+func (svc *chatroomService) ChatroomRepo() ChatroomRepository   { return svc.chatroomRepository }
+func (svc *chatroomService) UserRepo() user_repo.UserRepository { return svc.userRepository }
+func (svc *chatroomService) TimeoutDuration() time.Duration     { return svc.timeout }
 
-func NewChatroomService(chatRepo ChatroomRepository) ChatroomService {
+func NewChatroomService(chatRepo ChatroomRepository, userRepo user_repo.UserRepository) ChatroomService {
 	return &chatroomService{
 		chatroomRepository: chatRepo,
+		userRepository:     userRepo,
 		timeout:            time.Duration(2) * time.Second,
 	}
 }
@@ -42,7 +48,7 @@ func (svc *chatroomService) GetChatroomMessages(
 		return []chat_model.ChatMessageDTO{}, errors.New("RoomID is not a number")
 	}
 
-	dbRes, dbErr := svc.Repo().GetChatroomMessages(ctx, roomID)
+	dbRes, dbErr := svc.ChatroomRepo().GetChatroomMessages(ctx, roomID)
 	if dbErr != nil {
 
 		return []chat_model.ChatMessageDTO{}, dbErr
@@ -87,7 +93,7 @@ func (svc *chatroomService) SaveMessage(
 		Message:  userMsg,
 	}
 
-	dbRes, dbErr := svc.Repo().LogMessageAndReturn(ctx, dbReq)
+	dbRes, dbErr := svc.ChatroomRepo().LogMessageAndReturn(ctx, dbReq)
 	if dbErr != nil {
 		return chat_model.ChatMessageDTO{}, dbErr
 	}
@@ -100,7 +106,6 @@ func (svc *chatroomService) SaveMessage(
 
 	return data, nil
 }
-
 
 func (svc *chatroomService) SaveChatroomMessages(
 	ctx context.Context, req chat_model.SaveChatLogsRequest,
@@ -119,11 +124,33 @@ func (svc *chatroomService) SaveChatroomMessages(
 			Message:  log.UserMessage,
 		}
 
-		svc.Repo().LogMessage(ctx, logMsgRequest)
+		svc.ChatroomRepo().LogMessage(ctx, logMsgRequest)
 
 	}
 
 	return nil
+}
+
+func (svc *chatroomService) GetUsernameByID(
+	ctx context.Context,
+	req user_model.GetUsernameByIDRequest,
+) (string, error) {
+
+	uid := req.UserID
+
+	uidNum, err := model.UIDToInt(uid)
+	if err != nil {
+		return "", errors.New("uid must be a valid number")
+	}
+
+	dbUsername, err := svc.UserRepo().GetUsernameByID(ctx, uidNum)
+	if err != nil || dbUsername.Username == ""{
+		return "", errors.New("could not find username with uid: " + string(uid))
+	}
+
+	username := dbUsername.Username
+
+	return username, nil
 }
 
 // msg in expected format: "({id},{text})"

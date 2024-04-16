@@ -10,6 +10,7 @@ import (
 	echo "github.com/labstack/echo/v4"
 	db "github.com/rirachii/golivechat/db"
 	chat_svc "github.com/rirachii/golivechat/internal/chatroom"
+	user_svc "github.com/rirachii/golivechat/internal/user"
 	model "github.com/rirachii/golivechat/model"
 	chat_model "github.com/rirachii/golivechat/model/chat"
 	user_model "github.com/rirachii/golivechat/model/user"
@@ -167,7 +168,6 @@ func (room *chatroom) Close() {
 	room.closeBroadcast <- 1
 	room.closeSaveQueue <- 1
 
-
 	// close room. save msgs to db.
 
 }
@@ -283,11 +283,15 @@ func (room *chatroom) ListenToUserWS(user *chat_model.ChatroomUser) {
 			return
 		}
 
+		if len(messageToSend.MessageText) == 0 {
+			continue
+		}
+
 		newMessage := model.Message{
-			RoomID:         model.RID(messageToSend.RoomID),
-			SenderUsername: user.Username(),
-			SenderUID:      user.ID(),
-			Content:        messageToSend.MessageText,
+			RoomID:     model.RID(messageToSend.RoomID),
+			SenderName: user.Username(),
+			SenderUID:  user.ID(),
+			Content:    messageToSend.MessageText,
 		}
 
 		room.EnqueueMessageBroadcast(newMessage)
@@ -318,11 +322,9 @@ func (room *chatroom) SendMessageToUser(user *chat_model.ChatroomUser, msg model
 	templateData := chatroom_template.PrepareMessage(
 		chatroom_template.WebsocketDivID,
 		false,
-		msg.SenderUsername,
+		msg.SenderName,
 		msg.Content,
 	)
-
-	log.Printf("msg created: %v", templateData)
 
 	singleMessageTemplate.Execute(
 		wsWriter,
@@ -333,6 +335,8 @@ func (room *chatroom) SendMessageToUser(user *chat_model.ChatroomUser, msg model
 }
 
 func (room *chatroom) populateChatLogsFromDB() error {
+
+	uidUsername := make(map[model.UserID]string)
 
 	failedErr := errors.New("failed to get get chat logs from db")
 
@@ -353,10 +357,30 @@ func (room *chatroom) populateChatLogsFromDB() error {
 
 	for _, m := range messages {
 
+		senderUID := m.SenderID
+
+		msgSender, ok := uidUsername[senderUID]
+		if !ok {
+			ctx := context.TODO()
+
+			getUsernameReq := user_model.GetUsernameByIDRequest{
+				UserID: senderUID,
+			}
+
+			username, err := chatroom_service.GetUsernameByID(ctx, getUsernameReq)
+			if err != nil {
+				msgSender = fmt.Sprintf("User-%s", senderUID)
+			} else {
+				uidUsername[senderUID] = username
+				msgSender = username
+			}
+		}
+
 		msg := model.Message{
-			RoomID:    m.RoomID,
-			SenderUID: m.SenderID,
-			Content:   m.MessageText,
+			RoomID:     m.RoomID,
+			SenderUID:  senderUID,
+			SenderName: msgSender,
+			Content:    m.MessageText,
 		}
 
 		room.LogMessage(msg)
@@ -375,7 +399,9 @@ func createChatroomService() (chat_svc.ChatroomService, error) {
 	}
 
 	chatroomRepo := chat_svc.NewChatroomRepository(dbConn.DB())
-	chatroomSvc := chat_svc.NewChatroomService(chatroomRepo)
+	userRepo := user_svc.NewUserRepository(dbConn.DB())
+
+	chatroomSvc := chat_svc.NewChatroomService(chatroomRepo, userRepo)
 
 	return chatroomSvc, nil
 

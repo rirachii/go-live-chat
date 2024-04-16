@@ -157,12 +157,14 @@ func (handler *HubHandler) HandleUserJoinRequest(c echo.Context) error {
 	}
 
 	var userID string
-	claims, jwtErr := GetJWTClaims(c)
-	if jwtErr != nil {
+	claims, _ := GetJWTClaims(c)
+	if claims != nil {
 		userID = claims.GetUID()
 	} else {
 		userID = fmt.Sprint(rand.IntN(1 << 8))
 	}
+	log.Printf("user id is: [%s]", userID)
+
 	// TODO be wary of collisions of guest ids and user ids
 
 	joinRequest.UserID = model.UID(userID)
@@ -183,7 +185,7 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 	userID, uidErr := GetJWTUserID(c)
 	if uidErr != nil {
 		c.Response().Header().Set("HX-Redirect", "/landing")
-		return echo.NewHTTPError(http.StatusUnauthorized, uidErr.Error())
+		return c.Redirect(http.StatusUnauthorized, "/landing")
 	}
 
 	roomID := c.Param("roomID")
@@ -217,7 +219,7 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 	// Websocket connection, should be
 	// c.Logger().Print("HandleChatroomConnection()")
-	
+
 	if !c.IsWebSocket() {
 		errMsg := "expected Websocket connection, but was not"
 		return echo.NewHTTPError(http.StatusUpgradeRequired, errMsg)
@@ -230,7 +232,6 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 
 	userID := tokenUserInfo.ID
 	userUsername := tokenUserInfo.Username
-	
 
 	var connReq hub_model.RoomRequest
 	bindErr := c.Bind(&connReq)
@@ -243,9 +244,9 @@ func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 	rid := connReq.RoomID
 
 	userReq := model.UserRequest{
-		UserID: userID,
+		UserID:   userID,
 		Username: userUsername,
-		RoomID: model.RoomID(rid),
+		RoomID:   model.RoomID(rid),
 	}
 
 	chatroom := handler.Hub().Chatroom(userReq.RoomID)
@@ -288,12 +289,12 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 
 	for _, chatMessage := range chatroomLogs {
 
-		log.Printf(`msg: "[%s]" by: [%s]`, chatMessage.Content, chatMessage.SenderUsername)
+		log.Printf(`msg: "[%s]" by: [%s]`, chatMessage.Content, chatMessage.SenderName)
 
 		singleMsgData := chatroom_template.PrepareMessage(
 			chatroom_template.WebsocketDivID,
 			false,
-			string(chatMessage.SenderUsername),
+			string(chatMessage.SenderName),
 			chatMessage.Content,
 		)
 
