@@ -1,0 +1,25 @@
+{{ define "html-head" }}
+
+    <link rel="stylesheet" type="text/css" href="/css/globals.css">
+
+    {{ block "google-fonts" . }}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:ital,wght@0,300..900;1,300..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+        
+    {{ end }}
+
+    {{ block "htmx" .}}
+        <script 
+            src="https://unpkg.com/htmx.org@1.9.10" 
+            integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
+            crossorigin="anonymous">
+        </script>
+    {{ end }}
+
+
+{{ end }}
+
+
+{{ define "htmx-json" }} <script src="/js/htmx/json-enc.js"></script> {{ end }}
+{{ define "htmx-ws" }} <script src="/js/htmx/ws.js"></script> {{ end }}

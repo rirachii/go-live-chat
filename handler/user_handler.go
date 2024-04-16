@@ -6,112 +6,28 @@ import (
 	"net/http"
 
 	echo "github.com/labstack/echo/v4"
-	user "github.com/rirachii/golivechat/model/user"
-	userService "github.com/rirachii/golivechat/service/user"
-	db "github.com/rirachii/golivechat/service/db"
+	db "github.com/rirachii/golivechat/db"
+	user_service "github.com/rirachii/golivechat/internal/user"
+	user_model "github.com/rirachii/golivechat/model/user"
 )
 
-type UserHandler struct {
-	UserService userService.UserService
-}
-
-func NewHandler(s userService.UserService) *UserHandler {
-	return &UserHandler{
-		UserService: s,
-	}
-}
-
-// USER ROUTES HANDLER
-func getUserHandler() (*UserHandler, error) {
-	dbConn, err := db.ConnectDatabase()
-	if err != nil {
-		log.Fatalf("Could not initialize postgres db connection: %s", err)
-	}
-
-	userRep := userService.NewUserRepository(dbConn.DB())
-	userSvc := userService.NewUserService(userRep)
-	userHandler := NewHandler(userSvc)
-	return userHandler, nil
-}
-
-func (h *UserHandler) CreateUser(c echo.Context) (*user.CreateUserRes, *echo.HTTPError) {
-
-	var createUserReq user.CreateUserReq
-	err := c.Bind(&createUserReq)
-	if err != nil {
-		errorText := fmt.Sprintf("Bad request: %s", err.Error())
-		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
-		return nil, err
-	}
-
-	if 	createUserReq.Email == "" ||
-		createUserReq.Username == "" ||
-		createUserReq.Password == "" {
-
-		errorText := fmt.Sprintf("A field is empty: %+v", createUserReq)
-		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
-
-		return nil, err
-	}
-
-	res, err := h.UserService.CreateUser(c.Request().Context(), &createUserReq)
-	if err != nil {
-		err := echo.NewHTTPError(http.StatusInternalServerError,
-			fmt.Sprint("create user error: ", err),
-		)
-		return nil, err
-	}
-
-	return res, nil
-
-}
-
-func (h *UserHandler) LoginUser(c echo.Context) (*user.LoginUserRes, *echo.HTTPError) {
-
-	var loginReq user.LoginUserReq
-	bindErr := c.Bind(&loginReq)
-	if bindErr != nil {
-		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())
-		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
-		return nil, err
-	}
-
-	if loginReq.Email == "" || loginReq.Password == "" {
-		return nil, echo.NewHTTPError(http.StatusBadGateway, "A field is empty:", loginReq)
-	}
-
-	loginRes, loginErr := h.UserService.Login(c.Request().Context(), &loginReq)
-	if loginErr != nil {
-		return nil, echo.NewHTTPError(http.StatusInternalServerError, "error logging in:", loginErr)
-	}
-
-	return loginRes, nil
-}
-
-func (h *UserHandler) Logout(c echo.Context) error {
-	c.SetCookie(deadJWTCookie())
-
-	return nil
-}
-
-
 func HandleUserRegister(c echo.Context) error {
-	userHandler, err := getUserHandler()
+	userHandler, err := createUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
 
 	_, userErr := userHandler.CreateUser(c)
 	if userErr != nil {
-		return c.String(userErr.Code, userErr.Error())
+		return userErr
 	}
 
-	c.Response().Header().Set("HX-Redirect", "/login")
+	c.Response().Header().Set("HX-Redirect", "/landing")
 	return c.NoContent(http.StatusFound)
 }
 
 func HandleUserLogin(c echo.Context) error {
-	userHandler, err := getUserHandler()
+	userHandler, err := createUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
@@ -121,9 +37,8 @@ func HandleUserLogin(c echo.Context) error {
 		return c.String(loginErr.Code, loginErr.Error())
 	}
 
-	accessToken := loginRes.GetAccessToken()
+	accessToken := loginRes.AccessToken
 
-	log.Println("acess token: ", accessToken)
 
 	c.SetCookie(newJWTCookie(accessToken))
 	c.Response().Header().Set("HX-Redirect", "/hub")
@@ -132,7 +47,7 @@ func HandleUserLogin(c echo.Context) error {
 }
 
 func HandleUserLogout(c echo.Context) error {
-	userHandler, err := getUserHandler()
+	userHandler, err := createUserHandler()
 	if err != nil {
 		log.Fatalf("Could not get userHandler: %s", err)
 	}
@@ -143,28 +58,106 @@ func HandleUserLogout(c echo.Context) error {
 	return c.NoContent(http.StatusFound)
 }
 
-func newJWTCookie(jwt string) *http.Cookie {
-	cookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    jwt,
-		MaxAge:   3600,
-		Path:     "/",
-		Domain:   "localhost",
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: http.SameSiteDefaultMode,
-	}
-	return cookie
+// handles db requests
+type UserHandler struct {
+	UserService user_service.UserService
 }
 
-func deadJWTCookie() *http.Cookie {
-	deadCookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		MaxAge:   -1,
-		Domain:   "localhost",
-		Secure:   false,
-		HttpOnly: true,
+func NewHandler(s user_service.UserService) *UserHandler {
+	return &UserHandler{
+		UserService: s,
 	}
-	return deadCookie
 }
+
+func createUserHandler() (*UserHandler, error) {
+	dbConn, err := db.ConnectDatabase()
+	if err != nil {
+		log.Fatalf("Could not initialize postgres db connection: %s", err)
+	}
+
+	userRep := user_service.NewUserRepository(dbConn.DB())
+	userSvc := user_service.NewUserService(userRep)
+	userHandler := NewHandler(userSvc)
+	return userHandler, nil
+}
+
+func (h *UserHandler) CreateUser(c echo.Context) (user_model.UserCreated, *echo.HTTPError) {
+
+	userCreated := user_model.UserCreated{
+		Success: false,
+	}
+
+	var createUserReq user_model.CreateUserRequest
+	err := c.Bind(&createUserReq)
+	if err != nil {
+		errorText := fmt.Sprintf("Bad request: %s", err.Error())
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+		return userCreated, err
+	}
+
+	if createUserReq.Email == "" ||
+		createUserReq.Username == "" ||
+		createUserReq.Password == "" {
+
+		errorText := fmt.Sprintf("A field is empty: %+v", createUserReq)
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+
+		return userCreated, err
+	}
+
+	res, err := h.UserService.CreateUser(c.Request().Context(), createUserReq)
+	if err != nil {
+		err := echo.NewHTTPError(http.StatusInternalServerError,
+			fmt.Sprint("create user error: ", err),
+		)
+		return userCreated, err
+	}
+
+	userCreated.Success = true
+	userCreated.ID = res.UserID
+	userCreated.Email = res.Email
+	userCreated.Username = res.Username
+
+	return userCreated, nil
+
+}
+
+func (h *UserHandler) LoginUser(c echo.Context) (user_model.UserLoggedIn, *echo.HTTPError) {
+
+	userLoggedIn := user_model.UserLoggedIn{
+		Success: false,
+	}
+
+	var loginReq user_model.LoginUserRequest
+	bindErr := c.Bind(&loginReq)
+	if bindErr != nil {
+		errorText := fmt.Sprintf("Bad request: %s", bindErr.Error())
+		err := echo.NewHTTPError(http.StatusBadRequest, errorText)
+		return userLoggedIn, err
+	}
+
+	if loginReq.Email == "" || loginReq.Password == "" {
+		loginErr := echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("A field is empty: %+v", loginReq))
+		return userLoggedIn, loginErr
+	}
+
+	ctx := c.Request().Context()
+	loginRes, loginErr := h.UserService.Login(ctx, loginReq)
+	if loginErr != nil {
+		return userLoggedIn, echo.NewHTTPError(http.StatusInternalServerError, "error logging in:", loginErr)
+	}
+
+	userLoggedIn.Success = true
+	userLoggedIn.ID = loginRes.UserID
+	userLoggedIn.Username = loginRes.Username
+	userLoggedIn.AccessToken = loginRes.GetAccessToken()
+
+	return userLoggedIn, nil
+}
+
+func (h *UserHandler) Logout(c echo.Context) error {
+	c.SetCookie(deadJWTCookie())
+
+	return nil
+}
+

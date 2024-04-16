@@ -14,8 +14,8 @@ import (
 	chatroom_model "github.com/rirachii/golivechat/model/chat"
 	hub_model "github.com/rirachii/golivechat/model/hub"
 
-	db "github.com/rirachii/golivechat/service/db"
-	hub_svc "github.com/rirachii/golivechat/service/hub"
+	db "github.com/rirachii/golivechat/db"
+	hub_svc "github.com/rirachii/golivechat/internal/hub"
 
 	chatroom_template "github.com/rirachii/golivechat/templates/chatroom"
 	hub_template "github.com/rirachii/golivechat/templates/hub"
@@ -45,7 +45,6 @@ func InitiateHubHandler() (*HubHandler, error) {
 	go handler.Hub().Run()
 	go handler.openHubChatrooms()
 
-
 	return handler, nil
 }
 
@@ -64,8 +63,7 @@ func (handler *HubHandler) HandleGetPublicChatrooms(c echo.Context) error {
 
 	res, err := hubSvc.GetRoomsPublic(c.Request().Context(), chatroomsReq)
 	if err != nil {
-		log.Println("error with service")
-		return c.String(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	// IDs for template
@@ -96,12 +94,12 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	userID, err := GetJWTUserID(c)
 	if err != nil {
 		c.Response().Header().Set("HX-Redirect", "/login")
-		return c.NoContent(http.StatusUnauthorized)
+		return echo.NewHTTPError(http.StatusUnauthorized, "You need to create an account in order to create rooms.")
 	}
 
 	hubSvc, svcErr := createHubService()
 	if svcErr != nil {
-		return c.String(http.StatusInternalServerError, svcErr.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, svcErr.Error())
 	}
 
 	var createRoomReq hub_model.CreateRoomRequest
@@ -115,11 +113,10 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 
 	roomData, creationErr := hubSvc.CreateRoom(c.Request().Context(), createRoomReq)
 	if creationErr != nil {
-		return c.String(http.StatusInternalServerError, creationErr.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, creationErr.Error())
 	}
 
-	// TODO check if room already exists
-	echo.New().Logger.Printf("Create room request received with data: %+v", createRoomReq)
+	log.Printf("Create room \"%s\" request received from %s", createRoomReq.RoomName, createRoomReq.UserID)
 
 	var (
 		uid  model.UserID = createRoomReq.UserID
@@ -135,21 +132,16 @@ func (handler *HubHandler) HandleCreateRoom(c echo.Context) error {
 	}
 
 	chatroom := NewChatroom(roomInfo)
-
 	handler.Hub().RegisterRoom(chatroom)
 	go chatroom.Open()
 
-	var (
-		chatroomsTemplateID = hub_template.HubChatrooms.TemplateName
-	)
-
 	chatroomData := hub_template.PrepareChatroomData(rid, name)
-
 	// one room
 	templateData := hub_template.TemplateHubChatrooms{
 		Rooms: []hub_template.ChatroomTemplateData{chatroomData},
 	}
 
+	chatroomsTemplateID := hub_template.HubChatrooms.TemplateName
 	return c.Render(http.StatusOK, chatroomsTemplateID, templateData)
 }
 
@@ -191,14 +183,14 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 	userID, uidErr := GetJWTUserID(c)
 	if uidErr != nil {
 		c.Response().Header().Set("HX-Redirect", "/landing")
-		return c.String(http.StatusNoContent, uidErr.Error())
+		return echo.NewHTTPError(http.StatusUnauthorized, uidErr.Error())
 	}
 
 	roomID := c.Param("roomID")
 
 	hubSvc, svcErr := createHubService()
 	if svcErr != nil {
-		return c.String(http.StatusInternalServerError, svcErr.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, svcErr.Error())
 	}
 
 	getRoomReq := hub_model.GetChatroomRequest{
@@ -208,10 +200,8 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 
 	chatroom, dbErr := hubSvc.GetRoomInfo(c.Request().Context(), getRoomReq)
 	if dbErr != nil {
-		return c.String(http.StatusInternalServerError, dbErr.Error())
+		return echo.NewHTTPError(http.StatusInternalServerError, dbErr.Error())
 	}
-
-	c.Logger().Printf("chatroomDTO: %+v", chatroom)
 
 	chatroomInfo := chatroom_template.TemplateChatroomPage{
 		RoomID:   string(chatroom.RoomID),
@@ -227,46 +217,47 @@ func (handler *HubHandler) HandleChatroomPage(c echo.Context) error {
 func (handler *HubHandler) HandleChatroomConnection(c echo.Context) error {
 	// Websocket connection, should be
 	// c.Logger().Print("HandleChatroomConnection()")
-
-	tokenUserID, err := GetJWTUserID(c)
-	if err != nil {
-		return c.String(http.StatusFailedDependency, "Unable to retrieve JWT user id")
-	}
-
+	
 	if !c.IsWebSocket() {
 		errMsg := "expected Websocket connection, but was not"
-		c.Logger().Print(errMsg)
-		return c.NoContent(http.StatusUpgradeRequired)
+		return echo.NewHTTPError(http.StatusUpgradeRequired, errMsg)
 	}
+
+	tokenUserInfo, err := GetJWTUserInfo(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusFailedDependency, "Unable to retrieve JWT data")
+	}
+
+	userID := tokenUserInfo.ID
+	userUsername := tokenUserInfo.Username
+	
 
 	var connReq hub_model.RoomRequest
 	bindErr := c.Bind(&connReq)
 	if bindErr != nil {
 		errMsg := "connection request error"
-		c.Logger().Print(errMsg)
-		return c.NoContent(http.StatusBadRequest)
+		return echo.NewHTTPError(http.StatusBadRequest, errMsg)
 	}
-	connReq.UserID = tokenUserID
+	connReq.UserID = string(userID)
 
-	uid, rid := connReq.UserID, connReq.RoomID
+	rid := connReq.RoomID
 
 	userReq := model.UserRequest{
-		UserID: model.UserID(uid),
+		UserID: userID,
+		Username: userUsername,
 		RoomID: model.RoomID(rid),
 	}
-
 
 	chatroom := handler.Hub().Chatroom(userReq.RoomID)
 	if chatroom == nil {
 		chatroom_not_found := errors.New("could not find chatroom").Error()
-		return c.String(http.StatusBadRequest, chatroom_not_found)
+		return echo.NewHTTPError(http.StatusBadRequest, chatroom_not_found)
 	}
 
 	connErr := chatroom.AcceptConnection(c, userReq)
 	if connErr != nil {
 		// TODO handle err, tell client what error is maybe
-		c.Logger().Print("connection error", connErr)
-		return c.NoContent(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, connErr.Error())
 	}
 
 	// Must return nil.
@@ -297,12 +288,12 @@ func (handler *HubHandler) HandleFetchChatroomHistory(c echo.Context) error {
 
 	for _, chatMessage := range chatroomLogs {
 
-		log.Printf(`msg: "[%s]" by: [%s]`, chatMessage.Content, chatMessage.From)
+		log.Printf(`msg: "[%s]" by: [%s]`, chatMessage.Content, chatMessage.SenderUsername)
 
 		singleMsgData := chatroom_template.PrepareMessage(
 			chatroom_template.WebsocketDivID,
 			false,
-			string(chatMessage.From),
+			string(chatMessage.SenderUsername),
 			chatMessage.Content,
 		)
 
@@ -349,7 +340,6 @@ func (handler *HubHandler) openHubChatrooms() {
 
 }
 
-
 func getChatroomsDB() ([]chatroom_model.Chatroom, error) {
 	hubSvc, svcErr := createHubService()
 	if svcErr != nil {
@@ -379,7 +369,6 @@ func getChatroomsDB() ([]chatroom_model.Chatroom, error) {
 		hubChatrooms = append(hubChatrooms, newChatroom)
 
 	}
-
 
 	return hubChatrooms, nil
 }

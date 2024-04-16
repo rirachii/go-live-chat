@@ -1,78 +1,16 @@
-{{ define "register"}}
+{{ define "register-form-modal"}}
 
-
-<!DOCTYPE html>
-
-<html>
-
-<head>
-    <meta charset="utf-8">
-	<title>Register</title>
-	<link rel="stylesheet" type="text/css" href="/css/globals.css">
-
-    <script 
-        src="https://unpkg.com/htmx.org@1.9.10" 
-        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
-        crossorigin="anonymous">
-    </script>
-
-    <script src="/js/htmx/json-enc.js"></script>
-
-
-</head>
-
-<body>
-    <h1>Register here!</h1>
-
-    <div>
-        <a href="/landing"> back to home</a>
-    </div>
-
-    <form class="register-form" 
-        hx-post="/register" 
-        hx-ext="json-enc"
-        style="display: flex; flex-direction: column;"
-    >
-        <label for="email"><b>Email:</b></label>
-        <input type="email" 
-            placeholder="Enter Email" 
-            name="email" 
-            minlength="2"
-            required
-        >
-
-        <label for="username"><b>Username:</b></label>
-        <input type="text" 
-            placeholder="Enter your username" 
-            name="username" 
-            minlength="2"
-            required
-        >
-
-        <label for="password"><b>Password:</b></label>
-        <input type="password" 
-            placeholder="Enter your password" 
-            name="password" 
-            minlength="2"
-            required
-        >
-
-        <button type="submit">
-            Register here!
-        </button>
-
-    </form>
-
-    <a href="login">LOGIN here!</a>
+<dialog open 
+    class="user-register-form"
+    hx-post="/register"
+>
 
 
 
-
-</body>
-
+</dialog>
 
 
-</html>
+
 
 
 {{end}}

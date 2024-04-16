@@ -16,8 +16,13 @@ func HandleLanding(c echo.Context) error {
 	// jwt, ok := c.Get("jwt").(*jwt.Token)
 	// c.Logger().Print(c.Cookies())
 
+	_, err := GetJWTCookie(c)
+	if err == nil {
+		return c.Redirect(http.StatusSeeOther, "/hub")
+	}
+
 	data := landing_template.TemplateLandingPage{
-		Title: "LIVE CHAT SERVERRR!",
+		Title: "Welcome to GoChat!",
 	}
 
 	landingTemplate := landing_template.LandingPage.TemplateName
@@ -25,14 +30,20 @@ func HandleLanding(c echo.Context) error {
 }
 
 func HandleRegisterPage(c echo.Context) error {
+	
 
 	_, err := GetJWTCookie(c)
 	if err == nil {
 		return c.Redirect(http.StatusSeeOther, "/hub")
 	}
 
+	data := register_template.TemplateRegisterPage{
+		Title: "Welcome to GoChat!",
+	}
+
+
 	registerTemplate := register_template.RegisterPage.TemplateName
-	return c.Render(http.StatusOK, registerTemplate, nil)
+	return c.Render(http.StatusOK, registerTemplate, data)
 }
 
 func HandleLoginPage(c echo.Context) error {
@@ -48,7 +59,7 @@ func HandleLoginPage(c echo.Context) error {
 func HandleHubPage(c echo.Context) error {
 	_, err := GetJWTCookie(c)
 	if err != nil {
-		return c.Redirect(http.StatusSeeOther, "/login")
+		return c.Redirect(http.StatusSeeOther, "/landing")
 	}
 
 	hubTemplate := hub_template.HubPage.TemplateName

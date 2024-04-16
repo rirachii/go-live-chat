@@ -1,19 +1,18 @@
 package model
 
 import (
-	errors "errors"
-	fmt "fmt"
-
+	"errors"
+	"fmt"
+	"os"
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-const (
-	secretKey = "TODO_change_to_something_better_secret"
-)
+var secretKey = os.Getenv("JWT_SECRET_KEY")
 
 type JWTClaims struct {
 	ID       string `json:"id" db:"id"`
 	Username string `json:"username" db:"username"`
+	DisplayName string `json:"display-name" db:"display_name"` 
 	jwt.RegisteredClaims
 }
 
@@ -47,4 +46,3 @@ func (claims JWTClaims) GetUID() string {
 func (claims JWTClaims) GetUsername() string {
 	return claims.Username
 }
-

@@ -9,10 +9,9 @@ import (
 )
 
 type ChatroomRepository interface {
-	LogMessage(context.Context, RepoLogMessageRequest) (dbMessageLogIndex, error)
-	LogMessageAndReturn(context.Context, RepoLogMessageRequest) (dbChatMessage, error)
-	GetChatroomMessages(context.Context, RepoChatMsgLogsRequest) (dbChatroomLogs, error)
-	GetUserDisplayName(context.Context, RepoUserDisplayNameRequest) (dbUserDisplayName, error)
+	LogMessage(ctx context.Context, msgData RepoLogMessage) (dbMessageLogIndex, error)
+	LogMessageAndReturn(ctx context.Context, msgData RepoLogMessage) (dbChatMessage, error)
+	GetChatroomMessages(ctx context.Context, id int) (dbChatroomLogs, error)
 	// GetAdmins
 	// AddAdmins
 }
@@ -25,7 +24,7 @@ func NewChatroomRepository(db *pgx.Conn) ChatroomRepository {
 	return &chatroomRepository{db: db}
 }
 
-func (repo *chatroomRepository) LogMessage(ctx context.Context, req RepoLogMessageRequest) (dbMessageLogIndex, error) {
+func (repo *chatroomRepository) LogMessage(ctx context.Context, req RepoLogMessage) (dbMessageLogIndex, error) {
 
 	const (
 		table   = "chatrooms"
@@ -52,7 +51,7 @@ func (repo *chatroomRepository) LogMessage(ctx context.Context, req RepoLogMessa
 }
 
 // logs message, and then does another query to return its data.
-func (repo *chatroomRepository) LogMessageAndReturn(ctx context.Context, req RepoLogMessageRequest) (dbChatMessage, error) {
+func (repo *chatroomRepository) LogMessageAndReturn(ctx context.Context, req RepoLogMessage) (dbChatMessage, error) {
 
 	var (
 		tblName     = "chatrooms"
@@ -84,13 +83,13 @@ func (repo *chatroomRepository) LogMessageAndReturn(ctx context.Context, req Rep
 	return res, nil
 }
 
-func (repo *chatroomRepository) GetChatroomMessages(ctx context.Context, req RepoChatMsgLogsRequest) (dbChatroomLogs, error) {
+func (repo *chatroomRepository) GetChatroomMessages(ctx context.Context, chatroomID int) (dbChatroomLogs, error) {
 
 	query := `SELECT id, logs
 				FROM chatrooms
 				WHERE id = $1`
 
-	dbRes := repo.db.QueryRow(ctx, query, req.RoomID)
+	dbRes := repo.db.QueryRow(ctx, query, chatroomID)
 
 	var dbRoomID int
 	var dbLogs []string
@@ -106,25 +105,6 @@ func (repo *chatroomRepository) GetChatroomMessages(ctx context.Context, req Rep
 	}
 
 	return chatroomLogs, nil
-}
-
-func (r *chatroomRepository) GetUserDisplayName(ctx context.Context, req RepoUserDisplayNameRequest) (dbUserDisplayName, error) {
-	query := `SELECT id, display_name FROM user_display_names WHERE id = $1`
-
-	var id int
-	var displayName string
-
-	err := r.db.QueryRow(ctx, query, id).Scan(&id, &displayName)
-	if err != nil {
-		return dbUserDisplayName{}, err
-	}
-
-	res := dbUserDisplayName{
-		UserID:      id,
-		DisplayName: displayName,
-	}
-
-	return res, err
 }
 
 /*

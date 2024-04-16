@@ -5,13 +5,23 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/rirachii/golivechat/handler"
-	"github.com/rirachii/golivechat/service"
+	godotenv "github.com/joho/godotenv"
+	echo "github.com/labstack/echo/v4"
+	middleware "github.com/labstack/echo/v4/middleware"
+	handler "github.com/rirachii/golivechat/handler"
+	templates "github.com/rirachii/golivechat/templates"
+	internal "github.com/rirachii/golivechat/internal"
+
 )
 
 func main() {
+
+	// ensure .env exists
+	envErr := godotenv.Load(".env")
+	if envErr != nil {
+		log.Fatal("Could not load .env file")
+	}
+
 	e := echo.New()
 
 	SetupEchoServer(e)
@@ -19,7 +29,7 @@ func main() {
 	hubHandler, err := handler.InitiateHubHandler()
 	if err != nil {
 		log.Print(err.Error())
-		return 
+		return
 	}
 
 	InitializeRoutes(e, hubHandler)
@@ -38,7 +48,7 @@ func SetupEchoServer(e *echo.Echo) {
 	e.GET("/", redirectToLanding)
 	e.GET("/landing", handler.HandleLanding)
 
-	t := service.NewTemplateRenderer("templates/*/*.html")
+	t := templates.NewTemplateRenderer("templates/*/*.html")
 	e.Renderer = t
 
 	// MIDDLE WARE, TODO middleware for JWT
@@ -50,24 +60,6 @@ func SetupEchoServer(e *echo.Echo) {
 		Root:   "static",
 		Browse: false,
 	}))
-
-	// TODO middleware for JWT.
-	// secretKey := "TODO_change_to_something_better_secret"
-	// e.Use(echojwt.WithConfig(echojwt.Config{
-
-	// 	SuccessHandler: func(c echo.Context) {
-	// 		c.Logger().Print("Token found!")
-	// 	},
-	// 	ErrorHandler: func(c echo.Context, err error) error {
-	// 		c.Logger().Print("no token found", c.Cookies())
-	// 		return nil
-	// 	},
-	// 	ContextKey:  "jwt",
-	// 	SigningKey:  []byte(secretKey),
-	// 	TokenLookup: "cookie:jwt",
-	// }))
-
-	// e.Use(middleware.JWT())
 
 }
 
@@ -87,7 +79,6 @@ func InitializeHubRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 	hub.POST("/create-room", hubHandler.HandleCreateRoom)
 	hub.GET("/get-public-rooms", hubHandler.HandleGetPublicChatrooms)
 	hub.POST("/join-room/:roomID", hubHandler.HandleUserJoinRequest)
-
 
 	//TODO: instead we should run when user is logged in securly,
 	// maybe we can allow guests to join rooms but not create rooms
@@ -109,10 +100,10 @@ func InitializeChatroomRoutes(e *echo.Echo, hubHandler *handler.HubHandler) {
 }
 
 func InitializeUserAuthRoutes(e *echo.Echo) {
-	e.GET("/register", handler.HandleRegisterPage)
+	// e.GET("/register", handler.HandleRegisterPage)
 	e.POST("/register", handler.HandleUserRegister)
 
-	e.GET("/login", handler.HandleLoginPage)
+	// e.GET("/login", handler.HandleLoginPage)
 	e.POST("/login", handler.HandleUserLogin)
 	e.GET("/logout", handler.HandleUserLogout)
 }
@@ -126,13 +117,12 @@ func InitializeUserDataRoutes(e *echo.Echo) {
 	user.GET("/user-rooms", handler.HandleGetUserRooms)
 }
 
-
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)
 }
 
 func getRandomMsg(c echo.Context) error {
-	randomMsg := service.RandomMsg()
+	randomMsg := internal.RandomMsg()
 
 	c.Response().Header().Set("Content-Type", "application/json")
 	return c.JSON(http.StatusOK, randomMsg)

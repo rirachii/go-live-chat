@@ -7,6 +7,7 @@ type RoomID string
 
 type UserRequest struct {
 	UserID UserID
+	Username string
 	RoomID RoomID
 }
 
@@ -26,7 +27,8 @@ type ChatroomInfo struct {
 }
 
 type Message struct {
-	RoomID  RoomID
-	From    UserID
-	Content string
+	RoomID  RoomID	// room id
+	SenderUID UserID // user's id
+	SenderUsername    string // username
+	Content string // content of message
 }
