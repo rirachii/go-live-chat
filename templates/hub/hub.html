@@ -6,20 +6,14 @@
 
 
 <head>
-    <meta charset="utf-8">
 	<title>Chat Hub</title>
 
-	<link rel="stylesheet" type="text/css" href="/css/globals.css">
+    {{ template "html-head" . }} 
+    {{ template "htmx-json" . }}
+
+    {{ template "detect-location" . }}
+
 	<link rel="stylesheet" type="text/css" href="/css/hub.css">
-
-    <script 
-        src="https://unpkg.com/htmx.org@1.9.10" 
-        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
-        crossorigin="anonymous">
-    </script>
-
-    <script src="/js/htmx/json-enc.js"></script>
-    <script src="/js/listenerFunctions.js"></script>
 
 
 </head>
@@ -30,6 +24,9 @@
 
     {{ template "top-header-bar" . }}
 
+    <script>
+        
+    </script>
 
     <div class="welcome-msg">
         Find chats near you!
@@ -37,7 +34,30 @@
         Please allow location. We promise to sell your data!
     </div>
 
-    <hr>    
+    <hr>
+
+    <div></div>
+
+    <div class="user-location"
+        hx-post="/locate-user"
+        hx-trigger="load"
+        hx-target="this"
+        hx-swap="innerHTML"
+        hx-vals="js:{'locationData': getLocationData()}"
+        hx-ext="json-enc"
+    >
+        <img alt="Result loading..." class="htmx-indicator" width="150" src="/svg-loaders/circles.svg"/>
+
+        <!-- <form>
+            <li>Latitude: <span id="user-lat"></span> </li>
+            <li>Longitude: <span id="user-long"></span> </li>
+            <li>Accuracy: <span id="location-acc"></span> </li>
+        </form> -->
+
+
+    </div>
+
+
 
     <div style="text-align: center;">
         <form

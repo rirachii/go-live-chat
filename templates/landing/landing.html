@@ -109,21 +109,23 @@
 
 
             <br>
-            <button 
-                hidden
-                hx-get="/random-msgs"
-                hx-target=".random-msg-container #random-msg"
-                hx-swap="innerHTML"
-            > 
-                Get random 
-            </button>
+            <div class="random_api" hidden>
+                <button 
+                    hx-get="/random-msgs"
+                    hx-target=".random-msg-container #random-msg"
+                    hx-swap="innerHTML"
+                > 
+                    Get random 
+                </button>
 
-            <br>
+                <br>
 
-            <div class="random-msg-container">
-                <span id="random-msg"></span>
+                <div class="random-msg-container">
+                    <span id="random-msg"></span>
 
+                </div>
             </div>
+        
         </div>
         
     

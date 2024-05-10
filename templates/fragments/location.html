@@ -1,0 +1,21 @@
+{{ define "detect-location" }}
+
+    <script src="/js/location.js"></script>
+
+    <script>
+        addEventListener("load", detectUserLocation());
+
+        // console.log(detectUserLocation)
+    </script>
+
+
+{{ end }}
+
+
+{{ define "location-data" }}
+
+
+    {{ .County }}, {{ .City }}, {{ .Country }}
+
+
+{{ end }}

@@ -9,8 +9,6 @@ import (
 
 func HandleGetUsername(c echo.Context) error {
 
-	c.Logger().Print("get username")
-
 	const (
 		templateID    = "user-username"
 		usernameField = "Username"
@@ -43,6 +41,7 @@ func HandleGetUserProfile(c echo.Context) error {
 		imgDataID  = "UserImg"
 	)
 
+	// test loading
 	time.Sleep(time.Second * 0)
 
 	imgData := userImg{

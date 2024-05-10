@@ -5,22 +5,42 @@
     align-items: center;
     justify-content: center;
 
+    height: 80%;
+
     gap: 1rem;
 
+}
+
+.chat-messages-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 99dvw;
+    max-width: 99dvw;
+
+    /* border: 1px solid black; */
 }
 
 #chat-messages{
     display: flex;
     flex-direction: column;
+    padding: 1rem;
 
     overflow-x: hidden;
     overflow-y: scroll;
 
-    min-height: 50dvh;
-    max-height: 50dvh;
+    /* min-height: 50dvh;
+    max-height: 60dvh; */
+    height: 65dvh;
+    min-width: 80%;
+    max-width: 80%;
 
-    width: 80%;
+    background-color: grey;
+
     border: 1px solid black;
+    border-radius: 0.5rem;
+
 
 }
 

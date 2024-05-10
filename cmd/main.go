@@ -119,6 +119,7 @@ func InitializeUserDataRoutes(e *echo.Echo) {
 
 func InitializeAPIRoutes(e *echo.Echo) {
 	e.GET("/random-msgs", getRandomMsg)
+	e.POST("/locate-user", handler.HandleLocateUser)
 }
 
 func getRandomMsg(c echo.Context) error {

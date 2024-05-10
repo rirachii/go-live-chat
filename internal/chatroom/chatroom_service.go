@@ -53,13 +53,15 @@ func (svc *chatroomService) GetChatroomMessages(
 
 		return []chat_model.ChatMessageDTO{}, dbErr
 	}
-	log.Printf("getting chatroom messages from db: %+v", dbRes)
+	log.Printf("getting chatroom messages from db for chatroom[%s]: %d messages found",
+		req.RoomID, len(dbRes.MsgLogs),
+	)
 
 	dbRoomID := model.IntToRID(dbRes.RoomID)
 	chatroomMessages := []chat_model.ChatMessageDTO{}
 	for _, m := range dbRes.MsgLogs {
 
-		log.Printf("converting: %+v, of type %T", m, m)
+		// log.Printf("converting: %+v, of type %T", m, m)
 		msgSender, msgText := convertLogMsgToDTO(m)
 
 		msg := chat_model.ChatMessageDTO{
@@ -70,7 +72,7 @@ func (svc *chatroomService) GetChatroomMessages(
 		chatroomMessages = append(chatroomMessages, msg)
 	}
 
-	log.Print(chatroomMessages)
+	// log.Print(chatroomMessages)
 	return chatroomMessages, nil
 }
 
@@ -144,7 +146,7 @@ func (svc *chatroomService) GetUsernameByID(
 	}
 
 	dbUsername, err := svc.UserRepo().GetUsernameByID(ctx, uidNum)
-	if err != nil || dbUsername.Username == ""{
+	if err != nil || dbUsername.Username == "" {
 		return "", errors.New("could not find username with uid: " + string(uid))
 	}
 

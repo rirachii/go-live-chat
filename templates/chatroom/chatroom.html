@@ -18,6 +18,9 @@
 </head>
 
 <body>
+
+    {{ template "top-header-bar" . }}
+
     <h2> 
         Welcome to the "{{ .RoomName }}" chat room!
     </h2>
@@ -35,9 +38,7 @@
     >
     </div>
 
-    
-    <script src="/js/localStorage.js"></script>
-    
+
     <script>
 
         document.addEventListener("htmx:wsConnecting", function () {
@@ -68,9 +69,7 @@
 
 </html>
 
-
 {{end}}
-
 
 
 {{ define "chatroom-connection"}}
@@ -90,11 +89,12 @@
         >
         </div>
     
-        <div 
-            id="chat-messages"
-            hx-on::load="this.scrollTop = this.scrollHeight"
-        >
-            
+        <div class="chat-messages-container">
+            <div 
+                id="chat-messages"
+                hx-on::load="this.scrollTop = this.scrollHeight"
+            >
+            </div>
         </div>
 
         
@@ -102,7 +102,7 @@
             id="chatroom-send-message-form" 
             hx-include="this"
             hx-ext="json-enc"
-            hx-on::ws-before-send="this.reset()"
+            hx-on::ws-before-send="if(this.elements['chat-message'].value === ''){event.preventDefault();};this.reset()"
             ws-send
         > 
             <input type="text" 

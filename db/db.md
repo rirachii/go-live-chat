@@ -26,4 +26,4 @@ Check docker postgres db tables
 
 In project root run
 
-`migrate create -ext sql -dir service/db/migrations name_of_table`
+`migrate create -ext sql -dir db/migrations name_of_table`

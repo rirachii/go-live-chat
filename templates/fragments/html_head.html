@@ -1,6 +1,7 @@
 {{ define "html-head" }}
 
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
     <link rel="stylesheet" type="text/css" href="/css/globals.css">
@@ -13,11 +14,18 @@
     {{ end }}
 
     {{ block "htmx" .}}
-        <script 
-            src="https://unpkg.com/htmx.org@1.9.10" 
-            integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
-            crossorigin="anonymous">
-        </script>
+        <script src="https://unpkg.com/htmx.org@1.9.12" integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2" crossorigin="anonymous"></script>
+    {{ end }}
+
+    {{ block "hyper-script" . }}
+        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    {{ end }}
+
+    {{ block "here-api" . }}
+        <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"
+        type="text/javascript" charset="utf-8"></script>
+        <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"
+        type="text/javascript" charset="utf-8"></script>
     {{ end }}
 
 
