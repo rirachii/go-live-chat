@@ -27,8 +27,9 @@ type ChatroomInfo struct {
 }
 
 type Message struct {
-	RoomID        RoomID // room id
-	SenderUID     UserID // user's id
+	RoomID     RoomID // room id
+	SenderUID  UserID // user's id
 	SenderName string // user name
-	Content       string // content of message
+	// change to payload.
+	Content    string // content of message
 }

@@ -10,7 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	here_api "github.com/rirachii/golivechat/external"
+	here_api "github.com/rirachii/golivechat/api"
 	fragments_template "github.com/rirachii/golivechat/templates/fragments"
 
 )
