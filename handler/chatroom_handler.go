@@ -87,7 +87,7 @@ func (room *chatroom) EnqueueJoin(client *chat_model.ChatroomClient) { room.join
 func (room *chatroom) EnqueueLeave(user *chat_model.ChatroomUser)    { room.leaveQueue <- user }
 func (room *chatroom) EnqueueMessageBroadcast(message model.Message) { room.broadcastQueue <- message }
 
-func (room *chatroom) StartSaveChatoomMessagesStream() {
+func (room *chatroom) StartSaveChatroomMessagesStream() {
 
 	for {
 		select {
@@ -112,7 +112,7 @@ func (room *chatroom) Open() {
 	room.populateChatLogsFromDB()
 	room.status = Open
 
-	go room.StartSaveChatoomMessagesStream()
+	go room.StartSaveChatroomMessagesStream()
 
 	// TODO close functionality
 	for {

@@ -1,8 +1,7 @@
 package chatroom_model
 
 import (
-	echo "github.com/labstack/echo/v4"
-	model "github.com/rirachii/golivechat/app/internal/shared/model"
+	model "github.com/rirachii/golivechat/app/shared/model"
 )
 
 type Chatroom interface {
@@ -10,21 +9,24 @@ type Chatroom interface {
 	ID() model.RoomID
 	Name() string
 	IsPublic() bool
-	LastSavedLogIndex() int
+	Messages() []*ChatroomMessage
+	SavedMessages() []*ChatroomMessage
+	LastSavedMessage() int
 
-	ActiveUsers() map[model.UserID]*ChatroomUser
-	AddUser(user *ChatroomUser)
-	RemoveUser(uid model.UserID)
+	ActiveSubscribers() map[model.UserID]*Subscriber
+	AddSubscriber(subscriber *Subscriber)
+	RemoveSubscriber(uid model.UserID)
 
-	EnqueueJoin(client *ChatroomClient)
-	EnqueueLeave(user *ChatroomUser)
-	Broadcast(message model.Message)
+	EnqueueJoin(user *ChatroomUser)
+	EnqueueLeave(subscriber *Subscriber)
+	Broadcast(message *ChatroomMessage)
 
 	Open()
 	Close()
-	AcceptConnection(c echo.Context)
+	// AcceptConnection(c echo.Context)
 }
 
+// Chatroom information to create the chatroom
 type ChatroomInfo struct {
 	RoomID    model.RoomID
 	RoomName  string
@@ -32,9 +34,9 @@ type ChatroomInfo struct {
 	IsPublic  bool
 }
 
-type Message struct {
-	RoomID   model.RoomID
-	SenderID model.UserID // user's id
-	Sender   string       // user name
-	Content  string       // content of message
+type CreateChatroomRequest struct {
+	RoomID    model.RoomID
+	RoomName  string
+	RoomOwner model.UserID
+	IsPublic  bool
 }

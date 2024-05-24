@@ -8,7 +8,6 @@ type UserInfo struct {
 }
 
 
-
 type UserCreated struct {
 	Success  bool
 	ID       model.UserID
