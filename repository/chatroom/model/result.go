@@ -1,4 +1,4 @@
-package chatroom_repository
+package chatroom_repository_model
 
 type MessageLogIndex struct {
 	RoomID   int `db:"id"`

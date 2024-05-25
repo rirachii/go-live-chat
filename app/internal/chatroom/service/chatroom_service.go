@@ -10,14 +10,14 @@ import (
 
 	model "github.com/rirachii/golivechat/app/shared/model"
 	chatroom_repository "github.com/rirachii/golivechat/repository/chatroom"
+	chatroom_repository_model "github.com/rirachii/golivechat/repository/chatroom/model"
 )
 
 
-
 type ChatroomService interface {
-	SaveMessage(ctx context.Context, req SaveMessageRequest) (chatroom_repository.ChatroomMessage, error)
+	SaveMessage(ctx context.Context, req SaveMessageRequest) (chatroom_repository_model.ChatroomMessage, error)
 	SaveChatroomMessages(ctx context.Context, req SaveChatroomMessagesRequest) error
-	GetChatroomMessages(ctx context.Context, req GetChatroomLogsRequest) ([]chatroom_repository.ChatroomMessage, error)
+	GetChatroomMessages(ctx context.Context, req GetChatroomLogsRequest) ([]chatroom_repository_model.ChatroomMessage, error)
 	// GetUsernameByID(ctx context.Context, req user_model.GetUsernameByIDRequest) (username string, err error)
 }
 
@@ -44,28 +44,28 @@ func NewChatroomService(chatRepo chatroom_repository.ChatroomRepository,
 
 func (svc *chatroomService) GetChatroomMessages(
 	ctx context.Context, req GetChatroomLogsRequest,
-) ([]chatroom_repository.ChatroomMessage, error) {
+) ([]chatroom_repository_model.ChatroomMessage, error) {
 
 	roomId := req.RoomID.Int()
 
 	dbRes, dbErr := svc.ChatroomRepo().GetChatroomMessages(ctx, roomId)
 	if dbErr != nil {
 
-		return []chatroom_repository.ChatroomMessage{}, dbErr
+		return []chatroom_repository_model.ChatroomMessage{}, dbErr
 	}
 	log.Printf("getting chatroom messages from db for chatroom[%s]: %d messages found",
 		req.RoomID.String(), len(dbRes.MessageLogs),
 	)
 
 	dbRoomID := model.NewRoomID(dbRes.RoomID)
-	chatroomMessages := []chatroom_repository.ChatroomMessage{}
+	chatroomMessages := []chatroom_repository_model.ChatroomMessage{}
 	for _, m := range dbRes.MessageLogs {
 
 		// log.Printf("converting: %+v, of type %T", m, m)
 		// converts data to readable data
 		senderId, messageContent := parseMessage(m)
 
-		msg := chatroom_repository.ChatroomMessage{
+		msg := chatroom_repository_model.ChatroomMessage{
 			RoomID: dbRoomID.Int(),
 			SenderID: senderId.Int(),
 			MessageText: messageContent,
@@ -80,7 +80,7 @@ func (svc *chatroomService) GetChatroomMessages(
 
 func (svc *chatroomService) SaveMessage(
 	ctx context.Context, req SaveMessageRequest,
-) (chatroom_repository.ChatroomMessage, error) {
+) (chatroom_repository_model.ChatroomMessage, error) {
 
 	uid := req.UserID
 	rid := req.RoomID
@@ -94,7 +94,7 @@ func (svc *chatroomService) SaveMessage(
 
 	dbRes, dbErr := svc.ChatroomRepo().LogMessageReturn(ctx, dbReq)
 	if dbErr != nil {
-		return chatroom_repository.ChatroomMessage{}, dbErr
+		return chatroom_repository_model.ChatroomMessage{}, dbErr
 	}
 
 	return dbRes, nil

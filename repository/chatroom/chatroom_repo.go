@@ -2,24 +2,24 @@ package chatroom_repository
 
 import (
 	"context"
-	"fmt"
 
 	pgx "github.com/jackc/pgx/v5"
+	repo_model "github.com/rirachii/golivechat/repository/chatroom/model"
 )
 
-
 type ChatroomRepository interface {
-	LogMessage(ctx context.Context, msg messageData) (MessageLogIndex, error)
-	LogMessageReturn(ctx context.Context, msg messageData) (ChatroomMessage, error)
-	GetChatroomMessages(ctx context.Context, id int) (ChatroomMessages, error)
+	LogMessage(ctx context.Context, msg repo_model.MessageData) (repo_model.MessageLogIndex, error)
+	LogMessageReturn(ctx context.Context, msg repo_model.MessageData) (repo_model.ChatroomMessage, error)
+	GetChatroomMessages(ctx context.Context, id int) (repo_model.ChatroomMessages, error)
 }
 
 type chatroomRepository struct {
 	db *pgx.Conn
 }
 
-
-func (repo *chatroomRepository) LogMessage(ctx context.Context, d messageData) (MessageLogIndex, error) {
+func (repo *chatroomRepository) LogMessage(
+	ctx context.Context, d repo_model.MessageData,
+) (repo_model.MessageLogIndex, error) {
 
 	const (
 		table   = "chatrooms"
@@ -35,7 +35,7 @@ func (repo *chatroomRepository) LogMessage(ctx context.Context, d messageData) (
 	query := createLogMessageSQLStatement(table, msgLogs)
 	dbRes := repo.db.QueryRow(ctx, query, sender_id, msg, chatroom_id)
 
-	var res MessageLogIndex
+	var res repo_model.MessageLogIndex
 
 	scanErr := dbRes.Scan(&res.LogIndex)
 	if scanErr != nil {
@@ -46,7 +46,9 @@ func (repo *chatroomRepository) LogMessage(ctx context.Context, d messageData) (
 }
 
 // logs message, and then does another query to return its data.
-func (repo *chatroomRepository) LogMessageReturn(ctx context.Context, d messageData) (ChatroomMessage, error) {
+func (repo *chatroomRepository) LogMessageReturn(
+	ctx context.Context, d repo_model.MessageData,
+) (repo_model.ChatroomMessage, error) {
 
 	var (
 		tblName     = "chatrooms"
@@ -63,23 +65,25 @@ func (repo *chatroomRepository) LogMessageReturn(ctx context.Context, d messageD
 	var msgIndex int
 	indexScanErr := logRes.Scan(&msgIndex)
 	if indexScanErr != nil {
-		return ChatroomMessage{}, indexScanErr
+		return repo_model.ChatroomMessage{}, indexScanErr
 	}
 
 	// get message
 	getQuery := createGetMessageSQLStatement(tblName, msgLogs)
 	getRes := repo.db.QueryRow(ctx, getQuery, msgIndex)
 
-	var res ChatroomMessage
+	var res repo_model.ChatroomMessage
 	msgScanErr := getRes.Scan(&res.SenderID, &res.MessageText)
 	if msgScanErr != nil {
-		return ChatroomMessage{}, msgScanErr
+		return repo_model.ChatroomMessage{}, msgScanErr
 	}
 
 	return res, nil
 }
 
-func (repo *chatroomRepository) GetChatroomMessages(ctx context.Context, chatroomID int) (ChatroomMessages, error) {
+func (repo *chatroomRepository) GetChatroomMessages(
+	ctx context.Context, chatroomID int,
+) (repo_model.ChatroomMessages, error) {
 
 	query := `SELECT id, logs
 				FROM chatrooms
@@ -92,48 +96,13 @@ func (repo *chatroomRepository) GetChatroomMessages(ctx context.Context, chatroo
 	scanErr := dbRes.Scan(&dbRoomID, &dbLogs)
 	if scanErr != nil {
 		// log.Print(dbRes)
-		return ChatroomMessages{}, scanErr
+		return repo_model.ChatroomMessages{}, scanErr
 	}
 
-	chatroomLogs := ChatroomMessages{
-		RoomID:  dbRoomID,
+	chatroomLogs := repo_model.ChatroomMessages{
+		RoomID:      dbRoomID,
 		MessageLogs: dbLogs,
 	}
 
 	return chatroomLogs, nil
-}
-
-/*
-returns a statement where:
-$1 = sender_id,
-$2 = message,
-$3 = chatroom_id
-*/
-func createLogMessageSQLStatement(tblName string, logsColName string) string {
-
-	msgData := "ROW($1, $2)::CHAT_MESSAGE"
-	stmt := `UPDATE %[1]s
-				SET %[2]s = ARRAY_APPEND(%[2]s, %[3]s) 
-				WHERE id = $3
-				RETURNING id, ARRAY_LENGTH(%[2]s, 1);`
-
-	query := fmt.Sprintf(stmt, tblName, logsColName, msgData)
-
-	return query
-}
-
-/*
-returns a statement where:
-$1 = log_index,
-$2 = chatroom_id,
-*/
-func createGetMessageSQLStatement(tblName string, colName string) string {
-
-	stmt := `SELECT (%[1]v[$1]).sender_id, (%[1]v)[$1].msg
-			FROM %[2]v 
-			WHERE id = $2;`
-
-	query := fmt.Sprintf(stmt, colName, tblName)
-
-	return query
 }
