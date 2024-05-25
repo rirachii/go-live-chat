@@ -18,20 +18,23 @@ func (room *chatroom) CloseChatroom() {
 }
 
 // called by the hub to tell chatroom to accept a new connection
-func (room *chatroom) AcceptConnection(c echo.Context, userRequest model.UserRequest) error {
+func (room *chatroom) AcceptConnection(c echo.Context, uid model.UserID, rid model.RoomID) error {
+
+	// get username from db, inject into chatroom user
+	// username := create
+
+
 	w := c.Response().Writer
 	r := c.Request()
 
-	userConn, connErr := websocket.Accept(w,r, nil)
+	userConn, connErr := websocket.Accept(w, r, nil)
 	if connErr != nil {
 		log.Printf("%v", connErr)
 		return ErrWebsocketConnectionFailed
 	}
 
 	user := chatroom_model.NewChatroomUser(
-		userConn, 
-		model.CreateUserInfo(userRequest.UserId),
-		userRequest.RoomId,
+		userConn, uid, rid, "TODO",
 	)
 	room.EnqueueJoin(user)
 

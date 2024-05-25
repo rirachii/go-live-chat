@@ -19,7 +19,7 @@ func NewSubscriber(
 ) *Subscriber {
 	subscriber := Subscriber{
 		user:         user,
-		userInfo:     user.userInfo,
+		userInfo:     user.Info(),
 		rid:          user.roomId,
 		role:         role,
 		messageQueue: make(chan model.Message),

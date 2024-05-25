@@ -7,8 +7,8 @@ type RoomID struct {
 	idNum int
 }
 
-func (uid RoomID) ID() string { return uid.id }
-func (uid RoomID) IntID() int { return uid.idNum }
+func (uid RoomID) String() string { return uid.id }
+func (uid RoomID) Int() int { return uid.idNum }
 
 func NewRoomID(uid int) RoomID {
 

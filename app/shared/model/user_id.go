@@ -7,8 +7,8 @@ type UserID struct {
 	idNum int
 }
 
-func (uid UserID) ID() string { return uid.id }
-func (uid UserID) IntID() int { return uid.idNum }
+func (uid UserID) String() string { return uid.id }
+func (uid UserID) Int() int       { return uid.idNum }
 
 func NewUserID(uid int) UserID {
 

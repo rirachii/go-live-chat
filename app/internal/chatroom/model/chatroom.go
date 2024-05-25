@@ -6,7 +6,7 @@ import (
 
 type Chatroom interface {
 	Info() ChatroomInfo
-	ID() model.RoomID
+	Id() model.RoomID
 	Name() string
 	IsPublic() bool
 	Messages() []*ChatroomMessage

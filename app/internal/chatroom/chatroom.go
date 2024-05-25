@@ -2,7 +2,6 @@ package chatroom
 
 import (
 	"context"
-	"os/user"
 
 	chatroom_model "github.com/rirachii/golivechat/app/internal/chatroom/model"
 	model "github.com/rirachii/golivechat/app/shared/model"
@@ -65,7 +64,7 @@ func CreateChatroom(roomInfo chatroom_model.ChatroomInfo) chatroom_model.Chatroo
 }
 
 func (room chatroom) Info() chatroom_model.ChatroomInfo { return room.info }
-func (room chatroom) ID() model.RoomID                  { return room.info.RoomID }
+func (room chatroom) Id() model.RoomID                  { return room.info.RoomID }
 func (room chatroom) Name() string                      { return room.info.RoomName }
 func (room chatroom) IsPublic() bool                    { return room.info.IsPublic }
 
@@ -84,7 +83,7 @@ func (room *chatroom) ActiveSubscribers() map[model.UserID]*chatroom_model.Subsc
 }
 
 func (room *chatroom) AddSubscriber(subscriber *chatroom_model.Subscriber) {
-	room.activeSubscribers[subscriber.ID()] = subscriber
+	room.activeSubscribers[subscriber.Id()] = subscriber
 }
 func (room *chatroom) RemoveSubscriber(uid model.UserID) {
 	delete(room.activeSubscribers, uid)
@@ -116,8 +115,8 @@ func (room *chatroom) ListenToSubscriber(s *chatroom_model.Subscriber) {
 	ctx := context.Background()
 
 	for {
-		request := chatroom_model.NewMessageRequest(userId)
-		readErr := wsjson.Read(ctx, ws, &request)
+		msgRequest := chatroom_model.NewMessageRequest(userId)
+		readErr := wsjson.Read(ctx, ws, &msgRequest)
 		if readErr != nil {
 			// remove subscriber from room
 			room.EnqueueLeave(s)
@@ -125,17 +124,19 @@ func (room *chatroom) ListenToSubscriber(s *chatroom_model.Subscriber) {
 		}
 
 		// message is empty
-		if len(request.ChatMessage) == 0 {
+		if len(msgRequest.ChatMessage) == 0 {
 			continue
 		}
 		
-		userInfo := model.CreateUserInfo(request.UserID, req)
+		// userInfo := model.CreateUserInfo(msgRequest.UserID, msgRequest.)
 		newMessage := model.CreateMessage(
-			model.CreateUserRequest(request.))
+			model.CreateUserRequest(msgRequest.SenderId(), room.Id()),
+			msgRequest.ChatMessage,
+			model.MessageMetadata{},
 		)
 
-		
 		chatroomMessage := chatroom_model.NewChatroomMessage(newMessage)
+		room.Broadcast(chatroomMessage)
 		
 	}
 
